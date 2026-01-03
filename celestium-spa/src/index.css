@@ -11,18 +11,57 @@ body {
   margin: 0;
   overflow: hidden;
   font-feature-settings: "tnum";
+  /* Scanline Base */
+  background: radial-gradient(circle at center, #111 0%, #050505 100%);
 }
 
 @layer utilities {
   .glow-text {
-    text-shadow: 0 0 10px rgba(224, 224, 224, 0.5), 0 0 20px rgba(224, 224, 224, 0.3);
+    text-shadow: 0 0 10px rgba(0, 255, 157, 0.4), 0 0 20px rgba(0, 255, 157, 0.1);
   }
 
   .text-celestium-null.glow-text {
-    text-shadow: 0 0 10px rgba(255, 51, 51, 0.5), 0 0 20px rgba(255, 51, 51, 0.3);
+    text-shadow: 0 0 10px rgba(255, 51, 51, 0.5), 0 0 20px rgba(255, 51, 51, 0.2);
   }
 
   .text-celestium-accent {
     color: #00ff9d;
+  }
+}
+
+/* SCANLINE OVERLAY */
+body::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%,
+      rgba(0, 0, 0, 0.1) 50%);
+  background-size: 100% 4px;
+  /* Scanline height */
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Subtle Flicker */
+header {
+  animation: flicker 0.1s infinite;
+}
+
+@keyframes flicker {
+  0% {
+    opacity: 0.98;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.99;
   }
 }

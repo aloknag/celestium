@@ -16,7 +16,7 @@ module.exports = {
                 }
             },
             fontFamily: {
-                mono: ['"JetBrains Mono"', '"Roboto Mono"', 'monospace'],
+                mono: ['"Share Tech Mono"', '"JetBrains Mono"', 'monospace'],
             }
         },
     },
