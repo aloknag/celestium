@@ -31,7 +31,31 @@ export const Visualizer: FC<VisualizerProps> = ({ solarArc, rotation, lunarPhase
     const moonRadius = 35;
 
     // Solar Arc Progress
-    const safeArc = solarArc || 0;
+    const safeArc = Number.isFinite(solarArc as number) ? (solarArc as number) : 0;
+    const safeRotation = Number.isFinite(rotation) ? rotation : 0;
+    const safeLunarPhase = Number.isFinite(lunarPhase) ? lunarPhase : 0;
+
+    const angularDistance = (a: number, b: number) => {
+        // Smallest distance between angles a and b in degrees (0..180)
+        const d = ((a - b + 540) % 360) - 180;
+        return Math.abs(d);
+    };
+
+    const seasonalMarkers: Array<{ angle: number; label: string; title: string }> = [
+        { angle: 0, label: 'VE', title: 'Vernal Equinox (Solar Arc 000°)' },
+        { angle: 90, label: 'SS', title: 'Summer Solstice (Solar Arc 090°)' },
+        { angle: 180, label: 'AE', title: 'Autumnal Equinox (Solar Arc 180°)' },
+        { angle: 270, label: 'WS', title: 'Winter Solstice (Solar Arc 270°)' },
+    ];
+
+    const moonPhaseHint = (() => {
+        // Key lunar phase hints on the 0–29 index
+        if (safeLunarPhase === 0 || safeLunarPhase === 29) return { label: 'NEW', title: 'New Moon (Phase 00)' };
+        if (safeLunarPhase === 7) return { label: '1Q', title: 'First Quarter (Phase 07)' };
+        if (safeLunarPhase === 15) return { label: 'FULL', title: 'Full Moon (Phase 15)' };
+        if (safeLunarPhase === 22) return { label: '3Q', title: 'Last Quarter (Phase 22)' };
+        return null;
+    })();
     const yearProgress = safeArc / 360;
     const yearCircumference = 2 * Math.PI * yearRadius;
     const yearDashOffset = yearCircumference * (1 - yearProgress);
@@ -102,7 +126,7 @@ export const Visualizer: FC<VisualizerProps> = ({ solarArc, rotation, lunarPhase
     // Phase 15 (Full) = Light Centered (0 offset)
     // Phase 0 (New) = Light Far Left (-60 offset)
     // Phase 29 (New) = Light Far Right (+60 offset)
-    const lightOffset = (lunarPhase - 15) * 4;
+    const lightOffset = (safeLunarPhase - 15) * 4;
 
     return (
         <div className="relative flex items-center justify-center w-full max-w-[600px] aspect-square">
@@ -140,6 +164,48 @@ export const Visualizer: FC<VisualizerProps> = ({ solarArc, rotation, lunarPhase
                 {/* YEAR RING (Background Track) */}
                 <circle cx={center} cy={center} r={yearRadius} stroke={isNull ? "rgba(255, 51, 51, 0.2)" : "rgba(255, 255, 255, 0.15)"} strokeWidth="2" fill="none" />
 
+                {/* SEASONAL MARKERS (Equinox/Solstice Hints) */}
+                <g>
+                    {seasonalMarkers.map((m) => {
+                        const isActive = !isNull && angularDistance(safeArc, m.angle) < 1;
+                        const lineRad = (m.angle - 90) * (Math.PI / 180);
+                        const r1 = yearRadius - 2;
+                        const r2 = yearRadius + 12;
+                        const x1 = center + Math.cos(lineRad) * r1;
+                        const y1 = center + Math.sin(lineRad) * r1;
+                        const x2 = center + Math.cos(lineRad) * r2;
+                        const y2 = center + Math.sin(lineRad) * r2;
+                        const tx = center + Math.cos(lineRad) * (yearRadius + 24);
+                        const ty = center + Math.sin(lineRad) * (yearRadius + 24);
+
+                        return (
+                            <g key={`seasonal-${m.angle}`}>
+                                <title>{m.title}</title>
+                                <line
+                                    x1={x1}
+                                    y1={y1}
+                                    x2={x2}
+                                    y2={y2}
+                                    stroke={isActive ? '#00ff9d' : 'rgba(255,255,255,0.18)'}
+                                    strokeWidth={isActive ? 2 : 1}
+                                />
+                                <text
+                                    x={tx}
+                                    y={ty}
+                                    fill={isActive ? '#fff' : 'rgba(255,255,255,0.35)'}
+                                    fontSize="9"
+                                    textAnchor="middle"
+                                    alignmentBaseline="middle"
+                                    fontFamily="monospace"
+                                    style={{ textShadow: isActive ? '0 0 10px white' : 'none' }}
+                                >
+                                    {m.label}
+                                </text>
+                            </g>
+                        );
+                    })}
+                </g>
+
                 {/* The Solar Arc (Comet Tail) + Sun Marker */}
                 {!isNull && (
                     <>
@@ -172,7 +238,7 @@ export const Visualizer: FC<VisualizerProps> = ({ solarArc, rotation, lunarPhase
                                     fill="#ff0000"
                                     filter="drop-shadow(0 0 8px #ff0000)"
                                     initial={{ opacity: 0, scale: 0 }}
-                                    animate={{ opacity: 1, scale: 1, cx: pos.x, cy: pos.y }}
+                                    animate={{ opacity: 1, scale: 1 }}
                                     transition={{ type: "spring", stiffness: 50, damping: 20 }}
                                 />
                             );
@@ -197,7 +263,7 @@ export const Visualizer: FC<VisualizerProps> = ({ solarArc, rotation, lunarPhase
                 {/* DAY RING (Rotating) */}
                 <motion.g
                     style={{ originX: "50%", originY: "50%" }}
-                    animate={{ rotate: rotation }}
+                    animate={{ rotate: safeRotation }}
                     transition={{ type: "tween", ease: "linear", duration: 0 }}
                 >
                     <circle
@@ -227,6 +293,25 @@ export const Visualizer: FC<VisualizerProps> = ({ solarArc, rotation, lunarPhase
 
                 {/* 3. Inner shadow for depth (Crater effect) */}
                 <circle cx={center} cy={center} r={moonRadius} stroke="rgba(0,0,0,0.5)" strokeWidth="2" fill="none" />
+
+                {/* LUNAR PHASE HINT (New/Quarter/Full) */}
+                {moonPhaseHint && (
+                    <g>
+                        <title>{moonPhaseHint.title}</title>
+                        <text
+                            x={center}
+                            y={center + moonRadius + 20}
+                            fill="#00ff9d"
+                            fontSize="10"
+                            textAnchor="middle"
+                            alignmentBaseline="middle"
+                            fontFamily="monospace"
+                            style={{ textShadow: '0 0 10px rgba(0, 255, 157, 0.35)' }}
+                        >
+                            {moonPhaseHint.label}
+                        </text>
+                    </g>
+                )}
 
             </svg>
 

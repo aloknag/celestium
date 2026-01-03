@@ -43,7 +43,7 @@ export function useSolar(): SolarState {
             const diff = now.diff(start, 'days');
             const daysElapsed = diff.days; // Float
 
-            if (daysElapsed < 360) {
+            if (daysElapsed <= 360) {
                 // Kinetic Year
                 setState({
                     arc: daysElapsed.toFixed(3),
