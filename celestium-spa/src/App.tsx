@@ -9,10 +9,13 @@ function App() {
     lunarPhase,
     rotation,
     aeon,
-    epoch
+    epoch,
+    mode,
+    toggleMode,
+    geoStatus
   } = useCelestium();
 
-  // Tides Logic (00, 15, 29 are High)
+  // Tides Logic
   const lp = parseInt(lunarPhase, 10);
   const isHighTide = (lp <= 3) || (lp >= 12 && lp <= 18) || (lp >= 27);
   const tideStatus = isHighTide ? "High (Spring Tides)" : "Moderate (Neap Tides)";
@@ -71,7 +74,7 @@ function App() {
 
       {/* VISUALIZER */}
       <main className="flex-1 flex items-center justify-center relative w-full">
-        {/* Background Grid Lines (Optional Aesth) */}
+        {/* Background Grid Lines */}
         <div className="absolute inset-0 border-[0.5px] border-celestium-dim opacity-10 pointer-events-none rounded-full scale-150" />
 
         <Visualizer
@@ -84,6 +87,8 @@ function App() {
 
       {/* FOOTER / DECODE */}
       <footer className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-3 gap-8 text-xs md:text-sm tracking-widest text-celestium-dim border-t border-celestium-dim/30 pt-6">
+
+        {/* Left Col: System Status */}
         <div className="flex flex-col gap-1">
           <span className="uppercase text-celestium-accent opacity-50">System Status</span>
           <span className={displaySolar.isNull ? "text-celestium-null" : "text-white"}>
@@ -91,15 +96,38 @@ function App() {
           </span>
         </div>
 
-        <div className="flex flex-col gap-1 text-center">
-          <span className="uppercase text-celestium-accent opacity-50">Season Vector</span>
-          <span className="text-white">{displaySolar.season}</span>
+        {/* Center Col: Rotation Mode (TOGGLE) */}
+        <div className="flex flex-col gap-1 text-center items-center">
+          <span className="uppercase text-celestium-accent opacity-50">Rotation Protocol</span>
+          <button
+            onClick={toggleMode}
+            className={`px-3 py-1 rounded border transition-all uppercase text-[10px] tracking-widest ${mode === 'TRUE_SOLAR'
+              ? 'border-celestium-accent text-celestium-accent bg-celestium-accent/10 shadow-[0_0_10px_rgba(0,255,157,0.3)]'
+              : 'border-celestium-dim text-celestium-dim hover:border-white hover:text-white'
+              }`}
+          >
+            {mode === 'TRUE_SOLAR' ? 'TRUE SOLAR' : 'STANDARD ISO'}
+          </button>
+          {/* Geo Feedback */}
+          {mode === 'TRUE_SOLAR' && !geoStatus.latitude && (
+            <span className="text-[9px] animate-pulse text-celestium-accent">
+              {geoStatus.loading ? "TRIANGULATING..." : "WAITING FOR SIGNAL"}
+            </span>
+          )}
+          {mode === 'TRUE_SOLAR' && geoStatus.latitude && geoStatus.longitude && (
+            <span className="text-[9px] text-celestium-accent">
+              LOC: [{geoStatus.latitude.toFixed(2)}, {geoStatus.longitude.toFixed(2)}]
+            </span>
+          )}
+          {geoStatus.error && <span className="text-[9px] text-red-500">{geoStatus.error}</span>}
         </div>
 
+        {/* Right Col: Lunar */}
         <div className="flex flex-col gap-1 text-right">
           <span className="uppercase text-celestium-accent opacity-50">Lunar Effects</span>
           <span className="text-white">{tideStatus}</span>
         </div>
+
       </footer>
 
       {/* Version Tag */}
