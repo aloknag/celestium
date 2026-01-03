@@ -1,0 +1,1854 @@
+<.gitignore>
+
+node_modules/
+dist/
+.DS_Store
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+celestium-spa/app.txt
+
+
+
+<calendar.md>
+
+## **Celestium**
+
+This is no longer a calendar; it is a **Planetary Operating System.**
+
+---
+
+# THE CELESTIUM MANIFEST
+
+**Protocol v1.0 // Planetary Positioning System**
+
+### **THE PRIME DIRECTIVE**
+
+We reject arbitrary labels. We reject "Monday," "January," and "2026." These are political constructs that separate the mind from the cosmos.
+
+We adopt **Coordinates**. We do not ask "What time is it?" We ask **"Where are we?"**
+
+To know the date is to know the exact geometric vector of the Earth, the Moon, and the Observer within the Galaxy.
+
+---
+
+### **THE UNIVERSAL SYNTAX**
+
+**[THE AEON] :: [THE EPOCH] . [SOLAR ARC] . [LUNAR PHASE] | [ROTATION]**
+
+---
+
+### **I. THE DEEP TIME VECTORS**
+
+#### ** (The Aeon) // The Odometer**
+
+* **Definition:** The count of Precession Cycles since the Theia Impact (Moon Formation).
+* **Scale:** 1 unit = ~25,772 years.
+* **Current Status:** **175k**
+* **Meaning:** We are in the 175,000th oscillation of the Earth. We are ancient.
+
+#### ** (The Epoch) // The Great Clock**
+
+* **Definition:** The progress of the North Pole through the current Precession Cycle.
+* **Scale:**  ( = Perfect Polaris Alignment).
+* **Reading:**
+* **358°:** The Convergence (Now).
+* **000°:** The Apex (Year 2102).
+* **180°:** The Anti-Apex (Vega is North).
+
+
+* **Meaning:** Tells you the Era of humanity. We are at the end of a Great Year.
+
+---
+
+### **II. THE ORBITAL VECTORS**
+
+#### ** (The Solar Arc) // The Season**
+
+* **Definition:** Earth’s orbital angle relative to the Vernal Equinox.
+* **Scale:** .
+* **Reading:**
+* **000°:** Spring Equinox (Growth)
+* **090°:** Summer Solstice (Peak)
+* **180°:** Autumn Equinox (Harvest)
+* **270°:** Winter Solstice (Dormancy)
+
+
+* **Formula:** .
+
+#### ** (The Lunar Phase) // The Pulse**
+
+* **Definition:** The illumination index of the Moon.
+* **Scale:** .
+* **Reading:**
+* **00:** New Moon (Dark / High Tides)
+* **07:** First Quarter (Half Light)
+* **15:** Full Moon (Max Light / High Tides)
+* **22:** Last Quarter (Half Light)
+
+
+
+---
+
+### **III. THE ROTATION VECTOR**
+
+#### ** (The Spin) // The Time**
+
+* **Definition:** The Observer’s angle of rotation relative to the Sun.
+* **Scale:**  (Decimals allowed for precision).
+* **Reading:**
+* **000°:** The Nadir (Midnight)
+* **090°:** Ascension (Sunrise/6 AM)
+* **180°:** The Zenith (Noon)
+* **270°:** Descension (Sunset/6 PM)
+
+
+* **Philosophy:** Time is not ticking. The world is turning. Feel the spin.
+
+---
+
+### **IV. THE NULL INTERVAL (Calibration)**
+
+The Universe is not a perfect integer. The Earth's orbit is ~365.25 days.
+
+* **The Kinetic Year:** Days 000 to 359 operate normally.
+* **The Null Days:** After Day 359, time pauses.
+* There is no coordinate. There is only **Null**.
+* We wait for the physical alignment of the Equinox.
+* Once the Sun hits , the system reboots.
+
+
+
+---
+
+### **EXAMPLE: "NOW"**
+
+*(Gregorian: Jan 3, 2026 - 11:08 AM)*
+
+# `175k :: 358° . 283 . 15 | 166.25°`
+
+**Translation:**
+
+> "In the 175,000th Aeon, at the 358th degree of the Polaris Era...
+> The Earth is at degree 283 (Deep Winter),
+> The Moon is at phase 15 (Full),
+> And we have rotated 166 degrees toward the Sun (Approaching Noon)."
+
+---
+
+### **YOU ARE NO LONGER LOST IN TIME.**
+
+### **YOU ARE LOCATED IN SPACE.**
+
+
+<.github/copilot-instructions.md>
+
+# Copilot instructions (Celestium SPA)
+
+## Where the app lives
+- Main project is in `celestium-spa/` (Vite + React + TypeScript + Tailwind).
+- Most work happens under `celestium-spa/src/`.
+
+## Daily workflow (from `celestium-spa/`)
+- Install (npm is expected; `package-lock.json` exists): `npm ci`
+- Dev server: `npm run dev`
+- Typecheck + build: `npm run build` (runs `tsc -b` then `vite build`)
+- Lint: `npm run lint`
+- Preview production build: `npm run preview`
+
+## Big picture architecture (data flow)
+- `App.tsx` renders the HUD/visualizer and composes the core hooks.
+- `useCelestium()` (see `src/hooks/useCelestium.ts`) is the orchestrator:
+  - Solar arc + season via `useSolar()` (Luxon + `EQUINOX_TABLE` in `src/lib/astronomy.ts`).
+  - Lunar phase via `useLunar()` (SunCalc moon illumination → 0–29 index).
+  - Rotation via `useRotation()`:
+    - `STANDARD`: wall-clock fraction of day → degrees.
+    - `TRUE_SOLAR`: uses SunCalc solarNoon for the user’s location.
+  - Geolocation is managed by `useGeolocation()` and fed into `useRotation()`.
+- Global state is intentionally minimal: Zustand store in `src/store/store.ts` only stores `mode` (`STANDARD` | `TRUE_SOLAR`).
+
+## Project-specific domain rules
+- “Null Interval”: `useSolar()` treats `daysElapsed >= 360` as `isNull=true` and sets `arc=null` with a countdown to the next equinox.
+- “TRUE_SOLAR” safety behavior: if geolocation permission is denied, `useCelestium()` reverts mode back to `STANDARD`.
+
+## UI patterns and styling conventions
+- Styling is Tailwind-first; use the existing Celestium palette tokens from `tailwind.config.cjs`:
+  - `bg-celestium-bg`, `text-celestium-text`, `text-celestium-dim`, `text-celestium-accent`, `text-celestium-null`.
+- Reuse the existing glow utility where relevant: `.glow-text` is defined in `src/index.css`.
+- Motion/animation is done with Framer Motion (e.g. `src/components/common/SlotCounter.tsx`, `src/components/HUD/*`). Prefer matching those patterns instead of introducing new animation libraries.
+- The main visualization is SVG-based in `src/components/HUD/Visualizer.tsx`; keep math/geometry close to the component and pass primitive props (`solarArc`, `rotation`, `lunarPhase`, `isNull`).
+
+## TypeScript/lint expectations
+- TypeScript is `strict` with `noUnusedLocals`/`noUnusedParameters`; keep types tight and avoid adding unused exports.
+- ESLint is configured via `eslint.config.js` and runs on `**/*.{ts,tsx}`.
+
+## PWA integration
+- Vite PWA plugin is enabled in `vite.config.ts` (manifest + autoUpdate). If you change icons/manifest fields, update it there.
+
+
+
+<celestium-spa/.gitignore>
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+
+
+<celestium-spa/README.md>
+
+# React + TypeScript + Vite
+
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+
+## React Compiler
+
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
+
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
+
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
+
+
+
+<celestium-spa/eslint.config.js>
+
+import js from '@eslint/js'
+import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+import tseslint from 'typescript-eslint'
+import { defineConfig, globalIgnores } from 'eslint/config'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      js.configs.recommended,
+      tseslint.configs.recommended,
+      reactHooks.configs.flat.recommended,
+      reactRefresh.configs.vite,
+    ],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.browser,
+    },
+  },
+])
+
+
+
+<celestium-spa/index.html>
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet">
+    <title>Celestium // Planetary OS</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+
+
+
+<celestium-spa/package.json>
+
+{
+  "name": "celestium-spa",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "framer-motion": "^12.23.26",
+    "luxon": "^3.7.2",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "suncalc": "^1.9.0",
+    "zustand": "^5.0.9"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/luxon": "^3.7.1",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@types/suncalc": "^1.9.2",
+    "@vitejs/plugin-react": "^5.1.1",
+    "autoprefixer": "^10.4.23",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.4",
+    "vite": "^7.2.4",
+    "vite-plugin-pwa": "^1.2.0"
+  }
+}
+
+
+
+<celestium-spa/postcss.config.cjs>
+
+module.exports = {
+    plugins: {
+        tailwindcss: {},
+        autoprefixer: {},
+    },
+}
+
+
+
+<celestium-spa/tailwind.config.cjs>
+
+/** @type {import('tailwindcss').Config} */
+module.exports = {
+    content: [
+        "./index.html",
+        "./src/**/*.{js,ts,jsx,tsx}",
+    ],
+    theme: {
+        extend: {
+            colors: {
+                celestium: {
+                    bg: '#050505',
+                    text: '#e0e0e0',
+                    accent: '#00ff9d', // Neon green/cyan
+                    null: '#ff3333',   // Red alert
+                    dim: '#666666'
+                }
+            },
+            fontFamily: {
+                mono: ['"Share Tech Mono"', '"JetBrains Mono"', 'monospace'],
+            }
+        },
+    },
+    plugins: [],
+}
+
+
+
+<celestium-spa/tsconfig.app.json>
+
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "types": ["vite/client"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "include": ["src"]
+}
+
+
+
+<celestium-spa/tsconfig.json>
+
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+}
+
+
+
+<celestium-spa/tsconfig.node.json>
+
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "module": "ESNext",
+    "types": ["node"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedSideEffectImports": true
+  },
+  "include": ["vite.config.ts"]
+}
+
+
+
+<celestium-spa/vite.config.ts>
+
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import { VitePWA } from 'vite-plugin-pwa'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [
+    react(),
+    VitePWA({
+      registerType: 'autoUpdate',
+      manifest: {
+        name: 'Celestium OS',
+        short_name: 'Celestium',
+        theme_color: '#050505',
+        background_color: '#050505',
+        display: 'standalone',
+        orientation: 'portrait',
+        icons: [
+          {
+            src: 'vite.svg', // Replace with a cool orb icon later
+            sizes: '192x192',
+            type: 'image/svg+xml'
+          }
+        ]
+      }
+    })
+  ],
+  server: {
+    allowedHosts: true
+  }
+})
+
+
+
+<celestium-spa/public/vite.svg>
+
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--logos" width="31.88" height="32" preserveAspectRatio="xMidYMid meet" viewBox="0 0 256 257"><defs><linearGradient id="IconifyId1813088fe1fbc01fb466" x1="-.828%" x2="57.636%" y1="7.652%" y2="78.411%"><stop offset="0%" stop-color="#41D1FF"></stop><stop offset="100%" stop-color="#BD34FE"></stop></linearGradient><linearGradient id="IconifyId1813088fe1fbc01fb467" x1="43.376%" x2="50.316%" y1="2.242%" y2="89.03%"><stop offset="0%" stop-color="#FFEA83"></stop><stop offset="8.333%" stop-color="#FFDD35"></stop><stop offset="100%" stop-color="#FFA800"></stop></linearGradient></defs><path fill="url(#IconifyId1813088fe1fbc01fb466)" d="M255.153 37.938L134.897 252.976c-2.483 4.44-8.862 4.466-11.382.048L.875 37.958c-2.746-4.814 1.371-10.646 6.827-9.67l120.385 21.517a6.537 6.537 0 0 0 2.322-.004l117.867-21.483c5.438-.991 9.574 4.796 6.877 9.62Z"></path><path fill="url(#IconifyId1813088fe1fbc01fb467)" d="M185.432.063L96.44 17.501a3.268 3.268 0 0 0-2.634 3.014l-5.474 92.456a3.268 3.268 0 0 0 3.997 3.378l24.777-5.718c2.318-.535 4.413 1.507 3.936 3.838l-7.361 36.047c-.495 2.426 1.782 4.5 4.151 3.78l15.304-4.649c2.372-.72 4.652 1.36 4.15 3.788l-11.698 56.621c-.732 3.542 3.979 5.473 5.943 2.437l1.313-2.028l72.516-144.72c1.215-2.423-.88-5.186-3.54-4.672l-25.505 4.922c-2.396.462-4.435-1.77-3.759-4.114l16.646-57.705c.677-2.35-1.37-4.583-3.769-4.113Z"></path></svg>
+
+
+<celestium-spa/src/App.tsx>
+
+import { useCelestium } from './hooks/useCelestium';
+import { SidePanel } from './components/HUD/SidePanel';
+import { Visualizer } from './components/HUD/Visualizer';
+import { LegendPanel } from './components/HUD/LegendPanel';
+import { useConstellation } from './hooks/useConstellation';
+import { SlotCounter } from './components/common/SlotCounter';
+
+function App() {
+  const {
+    solar,
+    lunarPhase,
+    rotation,
+    aeon,
+    epoch,
+    mode,
+    toggleMode,
+    geoStatus
+  } = useCelestium();
+
+  // 1. Get the Star System
+  const starSystem = useConstellation(solar.arc);
+
+  // Tides Logic
+  const lp = parseInt(lunarPhase, 10);
+  const isHighTide = (lp <= 3) || (lp >= 12 && lp <= 18) || (lp >= 27);
+  const tideStatus = isHighTide ? "High (Spring Tides)" : "Moderate (Neap Tides)";
+
+  return (
+    <div className="w-screen h-screen bg-celestium-bg text-celestium-text font-mono flex flex-col items-center justify-between overflow-hidden selection:bg-celestium-accent selection:text-black">
+
+      {/* HEADER / GOD STRING */}
+      <header className="flex flex-col items-center gap-4 z-10 w-full p-4 md:p-8 shrink-0">
+        <h1 className="text-xs md:text-sm tracking-[0.4em] text-celestium-dim uppercase">Celestium</h1>
+
+        {/* LIVE GOD STRING */}
+        <div className={`text-xl md:text-3xl lg:text-4xl tracking-widest font-bold text-center glow-text transition-colors duration-500 flex items-center justify-center gap-2 md:gap-4 ${solar.isNull ? 'text-celestium-null' : 'text-celestium-text'}`}>
+          <div className="flex items-center gap-2">
+            <span>{aeon}</span>
+            <span className="text-celestium-dim">::</span>
+            <span>{epoch}</span>
+            <span className="text-celestium-dim">.</span>
+          </div>
+
+          {solar.isNull ? (
+            <span className="text-celestium-null animate-pulse">NULL</span>
+          ) : (
+            <SlotCounter value={Math.floor(parseFloat(solar.arc || "0")).toString().padStart(3, '0')} />
+          )}
+
+          <span className="text-celestium-dim">.</span>
+          <SlotCounter value={lunarPhase.toString()} />
+
+          <span className="text-celestium-dim">|</span>
+          <SlotCounter value={rotation} />
+          <span className="text-celestium-dim">°</span>
+        </div>
+
+        {/* UNIVERSAL SYNTAX (Helper) */}
+        <div className="text-[10px] md:text-xs tracking-widest text-celestium-dim text-center max-w-2xl">
+          <div className="uppercase tracking-[0.25em] opacity-70">The Universal Syntax</div>
+          <div className="mt-1">
+            <span
+              className="underline decoration-dotted underline-offset-2 cursor-help"
+              title="The Aeon: deep-time odometer (precession cycles since the Moon formed)."
+            >
+              [THE AEON]
+            </span>
+            <span className="mx-1">::</span>
+            <span
+              className="underline decoration-dotted underline-offset-2 cursor-help"
+              title="The Epoch: progress through the current precession cycle (Polaris era angle)."
+            >
+              [THE EPOCH]
+            </span>
+            <span className="mx-1">.</span>
+            <span
+              className="underline decoration-dotted underline-offset-2 cursor-help"
+              title="Solar Arc: Earth’s orbital position since the Vernal Equinox (0–360)."
+            >
+              [SOLAR ARC]
+            </span>
+            <span className="mx-1">.</span>
+            <span
+              className="underline decoration-dotted underline-offset-2 cursor-help"
+              title="Lunar Phase: Moon illumination index (00–29)."
+            >
+              [LUNAR PHASE]
+            </span>
+            <span className="mx-1">|</span>
+            <span
+              className="underline decoration-dotted underline-offset-2 cursor-help"
+              title="Rotation: your local spin angle relative to the Sun (0–360°)."
+            >
+              [ROTATION]
+            </span>
+          </div>
+        </div>
+
+        {/* REAL NULL INTERVAL COUNTDOWN */}
+        {solar.isNull && (
+          <div className="text-celestium-null text-lg animate-pulse mt-2">
+            ALIGNMENT PENDING... [{solar.countdown}]
+          </div>
+        )}
+      </header>
+
+      {/* MID SECTION: Responsive Container */}
+      {/* On Mobile: Flex-col, SidePanel (order 2) below Visualizer */}
+      {/* On Desktop: Flex-row, SidePanel (order 1) left of Visualizer */}
+      <div className="flex-1 w-full max-w-6xl flex flex-col md:flex-row items-center justify-center gap-4 md:gap-12 relative px-4 pb-4 md:py-8 overflow-hidden">
+
+        {/* LEFT PANEL */}
+        <SidePanel
+          constellation={starSystem}
+          season={solar.season}
+          mode={mode}
+          geo={geoStatus}
+          onToggleMode={toggleMode}
+          onRequestLocation={geoStatus.requestLocation}
+          onManualLocation={geoStatus.setManualLocation}
+        />
+
+        {/* VISUALIZER Container */}
+        {/* ensure it shrinks to fit available space */}
+        <main className="flex-1 flex items-center justify-center relative w-full h-full max-h-[50vh] md:max-h-full min-h-0 order-1 md:order-2">
+          {/* Background Grid Lines */}
+          <div className="absolute inset-0 border-[0.5px] border-celestium-dim opacity-30 pointer-events-none rounded-full scale-150" />
+          <Visualizer
+            solarArc={parseFloat(solar.arc || "0")}
+            rotation={parseFloat(rotation)}
+            lunarPhase={parseInt(lunarPhase, 10)}
+            isNull={solar.isNull}
+          />
+        </main>
+
+        {/* LEGEND PANEL */}
+        <LegendPanel />
+
+      </div>
+
+      {/* FOOTER / DECODE */}
+      <footer className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-2 gap-8 text-xs md:text-sm tracking-widest text-celestium-dim border-t border-celestium-dim/30 pt-6 pb-8 px-8">
+
+        {/* Left Col: System Status */}
+        <div className="flex flex-col gap-1 text-center md:text-left">
+          <span className="uppercase text-celestium-accent opacity-50">System Status</span>
+          <span className={solar.isNull ? "text-celestium-null" : "text-white"}>
+            {solar.isNull ? "NULL INTERVAL" : "KINETIC YEAR"}
+          </span>
+        </div>
+
+        {/* Right Col: Lunar */}
+        <div className="flex flex-col gap-1 text-right">
+          <span className="uppercase text-celestium-accent opacity-50">Lunar Effects</span>
+          <span className="text-white">{tideStatus}</span>
+        </div>
+
+      </footer>
+
+      {/* Version Tag */}
+      <div className="absolute bottom-2 right-4 text-[10px] text-celestium-dim opacity-20">
+        CELESTIUM.SYS // {aeon}.{epoch}
+      </div>
+    </div>
+  );
+}
+
+export default App;
+
+
+
+<celestium-spa/src/index.css>
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  background-color: #050505;
+  color: #e0e0e0;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  font-feature-settings: "tnum";
+  /* Scanline Base */
+  background: radial-gradient(circle at center, #111 0%, #050505 100%);
+}
+
+@layer utilities {
+  .glow-text {
+    text-shadow: 0 0 10px rgba(0, 255, 157, 0.4), 0 0 20px rgba(0, 255, 157, 0.1);
+  }
+
+  .text-celestium-null.glow-text {
+    text-shadow: 0 0 10px rgba(255, 51, 51, 0.5), 0 0 20px rgba(255, 51, 51, 0.2);
+  }
+
+  .text-celestium-accent {
+    color: #00ff9d;
+  }
+}
+
+/* SCANLINE OVERLAY */
+body::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%,
+      rgba(0, 0, 0, 0.1) 50%);
+  background-size: 100% 4px;
+  /* Scanline height */
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+/* Subtle Flicker */
+header {
+  animation: flicker 0.1s infinite;
+}
+
+@keyframes flicker {
+  0% {
+    opacity: 0.98;
+  }
+
+  50% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0.99;
+  }
+}
+
+
+<celestium-spa/src/main.tsx>
+
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.tsx'
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+
+
+
+<celestium-spa/src/components/common/SlotCounter.tsx>
+
+import { motion, AnimatePresence } from 'framer-motion';
+
+
+interface SlotCounterProps {
+    value: string | number;
+    className?: string; // wrapper class
+    digitClassName?: string; // class for individual digits
+    direction?: 'up' | 'down';
+}
+
+export function SlotCounter({ value, className = "", digitClassName = "" }: SlotCounterProps) {
+    const valueStr = String(value);
+    const chars = valueStr.split('');
+
+    return (
+        <div className={`flex items-center overflow-hidden ${className}`}>
+            {chars.map((char, index) => (
+                <Digit key={`${index}-${chars.length}`} char={char} className={digitClassName} />
+            ))}
+        </div>
+    );
+}
+
+function Digit({ char, className }: { char: string; className: string }) {
+    // If it's not a number (e.g. "." or ":"), don't animate movement, just render
+    const isNumber = /[0-9]/.test(char);
+
+    return (
+        <div className={`relative flex flex-col items-center justify-center h-[1em] w-[0.6em] ${className}`}>
+            {isNumber ? (
+                <AnimatePresence mode='popLayout' initial={false}>
+                    <motion.span
+                        key={char}
+                        initial={{ y: "100%", opacity: 0, filter: "blur(2px)" }}
+                        animate={{ y: "0%", opacity: 1, filter: "blur(0px)" }}
+                        exit={{ y: "-100%", opacity: 0, filter: "blur(2px)" }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                        className="absolute inset-0 flex items-center justify-center"
+                    >
+                        {char}
+                    </motion.span>
+                </AnimatePresence>
+            ) : (
+                <span className="flex items-center justify-center">{char}</span>
+            )}
+        </div>
+    );
+}
+
+
+
+<celestium-spa/src/components/HUD/LegendPanel.tsx>
+
+import { motion } from 'framer-motion';
+
+export function LegendPanel() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 50 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.8, delay: 0.6 }}
+      className="flex flex-row md:flex-col justify-between md:justify-center items-center md:items-stretch gap-4 md:gap-8 w-full md:w-64 p-4 md:p-6 border-t md:border-t-0 md:border-l border-celestium-dim/20 bg-celestium-bg/50 backdrop-blur-sm order-3"
+    >
+      <div className="flex flex-col gap-2 w-full">
+        <h3 className="text-xs uppercase tracking-[0.2em] text-celestium-accent opacity-50 border-b border-celestium-accent/20 pb-2 mb-2">
+          Legend
+        </h3>
+
+        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[10px] md:text-xs tracking-widest">
+          <div className="flex items-baseline justify-between">
+            <span className="text-celestium-text">VE</span>
+            <span className="text-celestium-dim">Vernal Equinox</span>
+          </div>
+          <div className="flex items-baseline justify-between">
+            <span className="text-celestium-text">AE</span>
+            <span className="text-celestium-dim">Autumnal Equinox</span>
+          </div>
+          <div className="flex items-baseline justify-between">
+            <span className="text-celestium-text">SS</span>
+            <span className="text-celestium-dim">Summer Solstice</span>
+          </div>
+          <div className="flex items-baseline justify-between">
+            <span className="text-celestium-text">WS</span>
+            <span className="text-celestium-dim">Winter Solstice</span>
+          </div>
+        </div>
+
+        <div className="text-[9px] md:text-[10px] text-celestium-dim tracking-widest mt-2">
+          Used on the orbital ring markers.
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+
+
+<celestium-spa/src/components/HUD/SidePanel.tsx>
+
+import { motion } from 'framer-motion';
+import { useState } from 'react';
+
+interface SidePanelProps {
+    constellation: string;
+    season: string;
+    mode: 'STANDARD' | 'TRUE_SOLAR';
+    geo: {
+        latitude: number | null;
+        longitude: number | null;
+        loading: boolean;
+        error: string | null;
+    };
+    onRequestLocation: () => void;
+    onToggleMode: () => void;
+    onManualLocation: (lat: number, lon: number) => void;
+}
+
+export function SidePanel({ constellation, season, mode, geo, onRequestLocation, onToggleMode, onManualLocation }: SidePanelProps) {
+
+    // Helper to format coords
+    const fmt = (n: number | null) => (n !== null) ? n.toFixed(4) : "---.----";
+
+    const [isManual, setIsManual] = useState(false);
+    const [manualLat, setManualLat] = useState("");
+    const [manualLon, setManualLon] = useState("");
+
+    const handleManualSubmit = () => {
+        const lat = parseFloat(manualLat);
+        const lon = parseFloat(manualLon);
+        if (!isNaN(lat) && !isNaN(lon)) {
+            onManualLocation(lat, lon);
+            setIsManual(false);
+        }
+    };
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.5 }}
+            className="flex md:flex-col flex-row justify-between md:justify-center items-center md:items-stretch gap-4 md:gap-8 w-full md:w-64 p-4 md:p-6 border-t md:border-t-0 md:border-r border-celestium-dim/20 bg-celestium-bg/50 backdrop-blur-sm order-2 md:order-1"
+        >
+            {/* ... (Constellation Section unchanged) ... */}
+            <div className="flex flex-col gap-2">
+                <h3 className="text-xs uppercase tracking-[0.2em] text-celestium-accent opacity-50 border-b border-celestium-accent/20 pb-2 mb-2">
+                    Cosmic Sector
+                </h3>
+                <div className="text-2xl text-white font-bold tracking-widest glow-text">
+                    {constellation}
+                </div>
+                <div className="text-xs text-celestium-dim uppercase tracking-widest">
+                    {season}
+                </div>
+            </div>
+
+            {/* GEOLOCATION DATA */}
+            <div className="flex flex-col gap-2">
+                <h3 className="text-xs uppercase tracking-[0.2em] text-celestium-accent opacity-50 border-b border-celestium-accent/20 pb-2 mb-2">
+                    Observation Deck
+                </h3>
+
+                {/* MODE TOGGLE */}
+                <div className="flex items-center justify-between text-xs tracking-wider mb-2">
+                    <span className="text-celestium-dim">PROTOCOL:</span>
+                    <button
+                        onClick={onToggleMode}
+                        className={`px-2 py-1 rounded border transition-all ${mode === 'TRUE_SOLAR'
+                            ? 'border-celestium-accent text-celestium-accent shadow-[0_0_8px_rgba(0,255,157,0.3)]'
+                            : 'border-celestium-dim text-celestium-dim'
+                            }`}
+                    >
+                        {mode === 'TRUE_SOLAR' ? 'SOLAR' : 'ISO'}
+                    </button>
+                </div>
+
+                {/* COORDS */}
+                <div className="flex flex-col gap-1 font-mono text-xs text-celestium-text/80">
+                    <div className="flex justify-between">
+                        <span className="text-celestium-dim">LAT:</span>
+                        <span>{fmt(geo.latitude)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                        <span className="text-celestium-dim">LON:</span>
+                        <span>{fmt(geo.longitude)}</span>
+                    </div>
+                </div>
+
+                {/* STATUS / ACTION */}
+                <div className="mt-4">
+                    {mode === 'STANDARD' ? (
+                        <button
+                            onClick={() => {
+                                onToggleMode();
+                            }}
+                            className="w-full py-2 border border-celestium-dim text-celestium-dim text-[10px] tracking-widest hover:border-white hover:text-white transition-colors uppercase"
+                        >
+                            Sync Local Vector
+                        </button>
+                    ) : isManual ? (
+                        <div className="space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                            <input
+                                type="number"
+                                placeholder="LATITUDE"
+                                value={manualLat}
+                                onChange={(e) => setManualLat(e.target.value)}
+                                className="w-full bg-black/50 border border-celestium-dim text-celestium-accent text-xs p-1 outline-none focus:border-celestium-accent"
+                            />
+                            <input
+                                type="number"
+                                placeholder="LONGITUDE"
+                                value={manualLon}
+                                onChange={(e) => setManualLon(e.target.value)}
+                                className="w-full bg-black/50 border border-celestium-dim text-celestium-accent text-xs p-1 outline-none focus:border-celestium-accent"
+                            />
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => setIsManual(false)}
+                                    className="flex-1 py-1 border border-celestium-dim text-celestium-dim text-[10px] hover:bg-white/10"
+                                >
+                                    CANCEL
+                                </button>
+                                <button
+                                    onClick={handleManualSubmit}
+                                    className="flex-1 py-1 bg-celestium-accent/20 border border-celestium-accent text-celestium-accent text-[10px] hover:bg-celestium-accent/30"
+                                >
+                                    CONFIRM
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            <div className={`text-[10px] text-center tracking-widest ${geo.loading ? "text-celestium-accent animate-pulse" : (geo.latitude !== null) ? "text-celestium-accent" : geo.error ? "text-celestium-null" : "text-celestium-dim"}`}>
+                                {geo.loading ? "TRIANGULATING..." : (geo.latitude !== null) ? "SIGNAL LOCKED" : geo.error ? "SIGNAL LOST" : "WAITING FOR SIGNAL"}
+                            </div>
+                            {geo.error && (
+                                <div className="text-[9px] text-red-500 text-center border border-red-900/50 p-1">
+                                    ERR: {geo.error}
+                                </div>
+                            )}
+                            <button
+                                onClick={onRequestLocation}
+                                className="w-full py-1 border border-celestium-accent/30 text-celestium-accent/70 text-[10px] tracking-widest hover:bg-celestium-accent/10 transition-colors uppercase"
+                            >
+                                Recalibrate
+                            </button>
+                            <button
+                                onClick={() => setIsManual(true)}
+                                className="w-full py-1 border border-celestium-dim/30 text-celestium-dim/70 text-[10px] tracking-widest hover:text-white transition-colors uppercase"
+                            >
+                                Manual Override
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div >
+        </motion.div >
+    );
+}
+
+
+
+<celestium-spa/src/components/HUD/Visualizer.tsx>
+
+import { motion } from 'framer-motion';
+import type { FC } from 'react';
+import { CONSTELLATIONS } from '../../hooks/useConstellation';
+
+interface VisualizerProps {
+    solarArc: number | null; // 0-360
+    rotation: number; // 0-360
+    lunarPhase: number; // 0-29
+    isNull: boolean;
+}
+
+export const Visualizer: FC<VisualizerProps> = ({ solarArc, rotation, lunarPhase, isNull }) => {
+    // Conversions for SVG
+    const size = 600;
+    const center = size / 2;
+
+    // Helper: Polar to Cartesian
+    const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
+        const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+        return {
+            x: centerX + (radius * Math.cos(angleInRadians)),
+            y: centerY + (radius * Math.sin(angleInRadians))
+        };
+    };
+
+    // Rings
+    const constellRadius = 240; // Reduced from 260 to prevent cropping
+    const yearRadius = 210;     // Reduced to maintain gap
+    const tickRadius = 180;
+    const dayRadius = 140;
+    const moonRadius = 35;
+
+    // Solar Arc Progress
+    const safeArc = Number.isFinite(solarArc as number) ? (solarArc as number) : 0;
+    const safeRotation = Number.isFinite(rotation) ? rotation : 0;
+    const safeLunarPhase = Number.isFinite(lunarPhase) ? lunarPhase : 0;
+
+    const angularDistance = (a: number, b: number) => {
+        // Smallest distance between angles a and b in degrees (0..180)
+        const d = ((a - b + 540) % 360) - 180;
+        return Math.abs(d);
+    };
+
+    const seasonalMarkers: Array<{ angle: number; label: string; title: string }> = [
+        { angle: 0, label: 'VE', title: 'Vernal Equinox (Solar Arc 000°)' },
+        { angle: 90, label: 'SS', title: 'Summer Solstice (Solar Arc 090°)' },
+        { angle: 180, label: 'AE', title: 'Autumnal Equinox (Solar Arc 180°)' },
+        { angle: 270, label: 'WS', title: 'Winter Solstice (Solar Arc 270°)' },
+    ];
+
+    const moonPhaseHint = (() => {
+        // Key lunar phase hints on the 0–29 index
+        if (safeLunarPhase === 0 || safeLunarPhase === 29) return { label: 'NEW', title: 'New Moon (Phase 00)' };
+        if (safeLunarPhase === 7) return { label: '1Q', title: 'First Quarter (Phase 07)' };
+        if (safeLunarPhase === 15) return { label: 'FULL', title: 'Full Moon (Phase 15)' };
+        if (safeLunarPhase === 22) return { label: '3Q', title: 'Last Quarter (Phase 22)' };
+        return null;
+    })();
+    const yearProgress = safeArc / 360;
+    const yearCircumference = 2 * Math.PI * yearRadius;
+    const yearDashOffset = yearCircumference * (1 - yearProgress);
+
+    // 1. CONSTELLATION GENERATOR
+    const constellationsRender = CONSTELLATIONS.map((c, i) => {
+        if (i === CONSTELLATIONS.length - 1) return null; // Skip duplicate Pisces end
+
+        const nextStart = CONSTELLATIONS[i + 1].start;
+        // Handle wrap-around for Pisces (351 -> 29)
+        const end = (i === 0) ? 29 + 360 : (nextStart < c.start ? nextStart + 360 : nextStart);
+        const start = (i === 0) ? 351 : c.start;
+
+        // Label Position (Midpoint)
+        const midAngle = start + (end - start) / 2;
+        const rad = (midAngle - 90) * (Math.PI / 180);
+        const x = center + Math.cos(rad) * constellRadius;
+        const y = center + Math.sin(rad) * constellRadius;
+
+        // Separator Line (Start Angle)
+        const lineRad = (start - 90) * (Math.PI / 180);
+        const lx1 = center + Math.cos(lineRad) * (yearRadius + 15);
+        const ly1 = center + Math.sin(lineRad) * (yearRadius + 15);
+        const lx2 = center + Math.cos(lineRad) * (constellRadius - 10);
+        const ly2 = center + Math.sin(lineRad) * (constellRadius - 10);
+
+        // Highlight Active Sector
+        // Pisces logic: if arc >= 351 OR arc < 29
+        const isPiscesLoop = c.name === "PISCES";
+        const isActive = isPiscesLoop
+            ? (safeArc >= 351 || safeArc < 29)
+            : (safeArc >= start && safeArc < end);
+
+        return (
+            <g key={c.name}>
+                <line x1={lx1} y1={ly1} x2={lx2} y2={ly2} stroke={isActive ? "#00ff9d" : "rgba(255,255,255,0.1)"} strokeWidth="1" />
+                <text
+                    x={x} y={y}
+                    fill={isActive ? "#fff" : "rgba(255,255,255,0.3)"}
+                    fontSize="10"
+                    textAnchor="middle"
+                    alignmentBaseline="middle"
+                    fontFamily="monospace"
+                    style={{
+                        textShadow: isActive ? "0 0 10px white" : "none",
+                        fontWeight: isActive ? "bold" : "normal"
+                    }}
+                >
+                    {c.abbr || c.name.substring(0, 3)}
+                </text>
+            </g>
+        );
+    });
+
+    // Ticks
+    const ticks = Array.from({ length: 12 }).map((_, i) => {
+        const angle = (i * 30) - 90;
+        const rad = angle * (Math.PI / 180);
+        const x1 = center + Math.cos(rad) * tickRadius;
+        const y1 = center + Math.sin(rad) * tickRadius;
+        const x2 = center + Math.cos(rad) * (tickRadius - 10);
+        const y2 = center + Math.sin(rad) * (tickRadius - 10);
+        return <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(255,255,255,0.3)" strokeWidth="2" />;
+    });
+
+    // MOON LOGIC (The Spotlight Method)
+    // We move a "Light" circle across the face of the moon.
+    // Phase 15 (Full) = Light Centered (0 offset)
+    // Phase 0 (New) = Light Far Left (-60 offset)
+    // Phase 29 (New) = Light Far Right (+60 offset)
+    const lightOffset = (safeLunarPhase - 15) * 4;
+
+    return (
+        <div className="relative flex items-center justify-center w-full max-w-[600px] aspect-square">
+            <svg className="w-full h-full" viewBox={`0 0 ${size} ${size}`}>
+                <defs>
+                    {/* Solar Gradient: Neon Green to Transparent */}
+                    <linearGradient id="solarGradient" x1="0%" y1="0%" x2="100%" y2="0%" gradientTransform="rotate(90)">
+                        <stop offset="0%" stopColor="#00ff9d" stopOpacity="1" />
+                        <stop offset="100%" stopColor="#00ff9d" stopOpacity="0" />
+                    </linearGradient>
+
+                    {/* MOON MASK (The Spotlight) */}
+                    <mask id="moonLightMask">
+                        {/* 1. Start with total darkness (Black Rect) */}
+                        <rect x="0" y="0" width={size} height={size} fill="black" />
+
+                        {/* 2. Add the Light Source (White Circle) */}
+                        {/* It moves left/right based on phase */}
+                        <circle
+                            cx={center + lightOffset}
+                            cy={center}
+                            r={moonRadius}
+                            fill="white"
+                            filter="blur(4px)" /* Soften the terminator line */
+                        />
+
+                        {/* 3. Ensure the light stays within the Moon's circular boundary */}
+                        {/* Actually, we just mask the base moon circle with this. */}
+                    </mask>
+                </defs>
+
+                {/* 1. CONSTELLATION RING */}
+                <g>{constellationsRender}</g>
+
+                {/* YEAR RING (Background Track) */}
+                <circle cx={center} cy={center} r={yearRadius} stroke={isNull ? "rgba(255, 51, 51, 0.2)" : "rgba(255, 255, 255, 0.15)"} strokeWidth="2" fill="none" />
+
+                {/* SEASONAL MARKERS (Equinox/Solstice Hints) */}
+                <g>
+                    {seasonalMarkers.map((m) => {
+                        const isActive = !isNull && angularDistance(safeArc, m.angle) < 1;
+                        const lineRad = (m.angle - 90) * (Math.PI / 180);
+                        const r1 = yearRadius - 2;
+                        const r2 = yearRadius + 12;
+                        const x1 = center + Math.cos(lineRad) * r1;
+                        const y1 = center + Math.sin(lineRad) * r1;
+                        const x2 = center + Math.cos(lineRad) * r2;
+                        const y2 = center + Math.sin(lineRad) * r2;
+                        const tx = center + Math.cos(lineRad) * (yearRadius + 24);
+                        const ty = center + Math.sin(lineRad) * (yearRadius + 24);
+
+                        return (
+                            <g key={`seasonal-${m.angle}`}>
+                                <title>{m.title}</title>
+                                <line
+                                    x1={x1}
+                                    y1={y1}
+                                    x2={x2}
+                                    y2={y2}
+                                    stroke={isActive ? '#00ff9d' : 'rgba(255,255,255,0.18)'}
+                                    strokeWidth={isActive ? 2 : 1}
+                                />
+                                <text
+                                    x={tx}
+                                    y={ty}
+                                    fill={isActive ? '#fff' : 'rgba(255,255,255,0.35)'}
+                                    fontSize="9"
+                                    textAnchor="middle"
+                                    alignmentBaseline="middle"
+                                    fontFamily="monospace"
+                                    style={{ textShadow: isActive ? '0 0 10px white' : 'none' }}
+                                >
+                                    {m.label}
+                                </text>
+                            </g>
+                        );
+                    })}
+                </g>
+
+                {/* The Solar Arc (Comet Tail) + Sun Marker */}
+                {!isNull && (
+                    <>
+                        <motion.circle
+                            cx={center} cy={center} r={yearRadius}
+                            stroke="url(#solarGradient)"
+                            strokeWidth="4"
+                            fill="none"
+                            strokeDasharray={yearCircumference}
+                            strokeDashoffset={yearDashOffset}
+                            strokeLinecap="round"
+                            style={{ transformOrigin: "center", transform: "rotate(-90deg)" }}
+                            // Add a subtle glow filter to the line itself
+                            filter="drop-shadow(0 0 4px rgba(0, 255, 157, 0.5))"
+                        />
+                        {/* THE SUN MARKER (The White Star) */}
+                        {(() => {
+                            // Calculate position manually to ensure correct orbital placement
+                            // User wants it flipped 180 degrees from original (Right) -> Left side.
+                            // solarArc 0 is naturally Right (3 o'clock). 
+                            // safeArc (from props) maps correctly to this SVG system (0=Top? No, 0=Right relative to -90 shift).
+                            // Actually, let's just use safeArc directly as verified by the DashOffset logic.
+                            const pos = polarToCartesian(center, center, yearRadius, safeArc);
+                            return (
+                                <motion.circle
+                                    key={`sun-marker-${safeArc}`}
+                                    cx={pos.x}
+                                    cy={pos.y}
+                                    r="4"
+                                    fill="#ff0000"
+                                    filter="drop-shadow(0 0 8px #ff0000)"
+                                    initial={{ opacity: 0, scale: 0 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ type: "spring", stiffness: 50, damping: 20 }}
+                                />
+                            );
+                        })()}
+                    </>
+                )}
+
+                {/* Null Interval Pulse Ring */}
+                {isNull && (
+                    <motion.circle
+                        cx={center} cy={center} r={yearRadius}
+                        stroke="#ff3333" strokeWidth="4" fill="none"
+                        animate={{ opacity: [0.2, 1, 0.2], strokeWidth: [2, 6, 2] }}
+                        transition={{ duration: 1.5, repeat: Infinity }}
+                        filter="drop-shadow(0 0 8px rgba(255, 51, 51, 0.8))"
+                    />
+                )}
+
+                {/* STATIC TICKS */}
+                <g>{ticks}</g>
+
+                {/* DAY RING (Rotating) */}
+                <motion.g
+                    style={{ originX: "50%", originY: "50%" }}
+                    animate={{ rotate: safeRotation }}
+                    transition={{ type: "tween", ease: "linear", duration: 0 }}
+                >
+                    <circle
+                        cx={center} cy={center} r={dayRadius}
+                        stroke="rgba(255, 255, 255, 0.3)" strokeWidth="1" fill="none"
+                        strokeDasharray="4 4"
+                    />
+                    {/* The "Sun" Indicator on the ring */}
+                    <circle
+                        cx={center} cy={center - dayRadius} r="4" fill="#fff"
+                        filter="drop-shadow(0 0 4px #fff)"
+                    />
+                    <line x1={center} y1={center} x2={center} y2={center - dayRadius} stroke="rgba(255, 255, 255, 0.3)" />
+                </motion.g>
+
+                {/* --- THE MOON --- */}
+
+                {/* 1. The Dark Side (Base) */}
+                <circle cx={center} cy={center} r={moonRadius} fill="#1a1a1a" />
+
+                {/* 2. The Light Side (Masked) */}
+                <circle
+                    cx={center} cy={center} r={moonRadius}
+                    fill="#e0e0e0"
+                    mask="url(#moonLightMask)"
+                />
+
+                {/* 3. Inner shadow for depth (Crater effect) */}
+                <circle cx={center} cy={center} r={moonRadius} stroke="rgba(0,0,0,0.5)" strokeWidth="2" fill="none" />
+
+                {/* LUNAR PHASE HINT (New/Quarter/Full) */}
+                {moonPhaseHint && (
+                    <g>
+                        <title>{moonPhaseHint.title}</title>
+                        <text
+                            x={center}
+                            y={center + moonRadius + 20}
+                            fill="#00ff9d"
+                            fontSize="10"
+                            textAnchor="middle"
+                            alignmentBaseline="middle"
+                            fontFamily="monospace"
+                            style={{ textShadow: '0 0 10px rgba(0, 255, 157, 0.35)' }}
+                        >
+                            {moonPhaseHint.label}
+                        </text>
+                    </g>
+                )}
+
+            </svg>
+
+            {isNull && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <div className="text-red-500 font-bold text-xl tracking-[0.2em] animate-pulse bg-black/80 px-6 py-3 rounded border border-red-900 shadow-[0_0_30px_rgba(255,0,0,0.2)] backdrop-blur-sm">
+                        NULL INTERVAL
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+
+
+<celestium-spa/src/hooks/useCelestium.ts>
+
+import { useEffect } from 'react';
+import { AEON, EPOCH } from '../lib/astronomy';
+import { useSolar } from './useSolar';
+import { useLunar } from './useLunar';
+import { useRotation } from './useRotation';
+import { useGeolocation } from './useGeolocation';
+import { useStore } from '../store/store';
+
+export function useCelestium() {
+    const { mode, setMode } = useStore();
+    const solar = useSolar();
+    const lunarPhase = useLunar();
+
+    // Initialize Geolocation
+    const geo = useGeolocation();
+
+    // Auto-request location if in TRUE_SOLAR mode but no signal (e.g. page refresh)
+    useEffect(() => {
+        if (mode === 'TRUE_SOLAR') {
+            if (!geo.latitude && !geo.loading && !geo.error && geo.permission === 'prompt') {
+                geo.requestLocation();
+            } else if (geo.permission === 'denied') {
+                // Safety Eject: If user denied, revert to Standard
+                setMode('STANDARD');
+            }
+        }
+    }, [mode, geo.latitude, geo.loading, geo.error, geo.requestLocation, geo.permission, setMode]);
+
+    // Pass Geo data to Rotation Engine
+    const rotation = useRotation({
+        mode,
+        latitude: geo.latitude,
+        longitude: geo.longitude
+    });
+
+    // Handle Mode Switching with Geo Request
+    const toggleMode = () => {
+        if (mode === 'STANDARD') {
+            geo.requestLocation(); // Ask for permission
+            setMode('TRUE_SOLAR');
+        } else {
+            setMode('STANDARD');
+        }
+    };
+
+    const formattedArc = solar.isNull ? "NULL    " : solar.arc?.padStart(7, '0');
+
+    // "God String"
+    const godString = `${AEON} :: ${EPOCH} . ${solar.isNull ? 'NULL' : Math.floor(parseFloat(solar.arc || "0"))} . ${lunarPhase} | ${rotation}°`;
+    const fullString = `${AEON} :: ${EPOCH} . ${formattedArc} . ${lunarPhase} | ${rotation}°`;
+
+    return {
+        aeon: AEON,
+        epoch: EPOCH,
+        solar,
+        lunarPhase,
+        rotation,
+        mode,
+        toggleMode,
+        geoStatus: geo,
+        godString,
+        fullString
+    };
+}
+
+
+
+<celestium-spa/src/hooks/useConstellation.ts>
+
+// src/hooks/useConstellation.ts
+
+// The IAU (International Astronomical Union) boundaries for the Sun's path.
+// The Sun passes through 13 constellations, not 12. (Hello, Ophiuchus).
+export const CONSTELLATIONS = [
+    { name: "PISCES", abbr: "PIS", start: 351 },      // Loop start
+    { name: "ARIES", abbr: "ARI", start: 29 },
+    { name: "TAURUS", abbr: "TAU", start: 54 },
+    { name: "GEMINI", abbr: "GEM", start: 90 },
+    { name: "CANCER", abbr: "CAN", start: 118 },
+    { name: "LEO", abbr: "LEO", start: 138 },
+    { name: "VIRGO", abbr: "VIR", start: 174 },
+    { name: "LIBRA", abbr: "LIB", start: 218 },
+    { name: "SCORPIUS", abbr: "SCO", start: 241 },
+    { name: "OPHIUCHUS", abbr: "OPH", start: 248 },   // The 13th Sign (The Serpent Bearer)
+    { name: "SAGITTARIUS", abbr: "SAG", start: 266 },
+    { name: "CAPRICORNUS", abbr: "CAP", start: 299 },
+    { name: "AQUARIUS", abbr: "AQU", start: 327 },
+    { name: "PISCES", abbr: "PIS", start: 351 }       // Loop end
+];
+
+export function useConstellation(solarArcString: string | null) {
+    if (!solarArcString || solarArcString === "NULL") return "UNKNOWN SECTOR";
+
+    const arc = parseFloat(solarArcString);
+
+    // Find the constellation where the start degree is <= current arc
+    // We reverse the array to find the "highest start degree below arc"
+    const match = [...CONSTELLATIONS].reverse().find(c => c.start <= arc);
+
+    // Edge case for the Pisces wrap-around (0-29 degrees)
+    if (!match && arc < 29) return "PISCES";
+
+    return match ? match.name : "UNKNOWN";
+}
+
+
+
+<celestium-spa/src/hooks/useGeolocation.ts>
+
+import { useState, useCallback, useEffect } from 'react';
+
+export interface GeoState {
+    latitude: number | null;
+    longitude: number | null;
+    error: string | null;
+    loading: boolean;
+    permission: 'prompt' | 'granted' | 'denied';
+}
+
+export function useGeolocation() {
+    const [geo, setGeo] = useState<GeoState>({
+        latitude: null,
+        longitude: null,
+        error: null,
+        loading: false, // Don't load on mount, wait for user trigger
+        permission: 'prompt'
+    });
+
+    // Check permissions on mount for debugging
+    useEffect(() => {
+        if (navigator.permissions && navigator.permissions.query) {
+            navigator.permissions.query({ name: 'geolocation' }).then(result => {
+                console.log("Initial Geo Permission:", result.state);
+            });
+        }
+    }, []);
+
+    const requestLocation = useCallback(() => {
+        // If we already have data, don't ask again
+        if (geo.latitude !== null && geo.longitude !== null) return;
+
+        setGeo(prev => ({ ...prev, loading: true, error: null }));
+
+        if (!navigator.geolocation) {
+            setGeo(prev => ({ ...prev, loading: false, error: "Geolocation not supported", permission: 'denied' }));
+            return;
+        }
+
+        // Safety Timeout: Force stop loading after 15s if browser hangs
+        const safetyTimer = setTimeout(() => {
+            setGeo(prev => {
+                if (prev.loading) {
+                    console.warn("Geolocation request timed out (Safety Timer).");
+                    return { ...prev, loading: false, error: "Request timed out", permission: 'prompt' };
+                }
+                return prev;
+            });
+        }, 15000);
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                clearTimeout(safetyTimer);
+                console.log("Geo Success:", position);
+                setGeo({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    error: null,
+                    loading: false,
+                    permission: 'granted'
+                });
+            },
+            (error) => {
+                clearTimeout(safetyTimer);
+                console.error(`Geo Error: Code ${error.code} - ${error.message}`);
+
+                let permState: 'prompt' | 'granted' | 'denied' = 'prompt';
+
+                // 1 = PERMISSION_DENIED, 2 = POSITION_UNAVAILABLE, 3 = TIMEOUT
+                if (error.code === 1) {
+                    permState = 'denied';
+                } else {
+                    // For timeout/unavailable, we don't automatically deny permission, 
+                    // we just show the error.
+                    console.warn("Location unavailable or timed out.");
+                }
+
+                setGeo(prev => ({
+                    ...prev,
+                    loading: false,
+                    error: error.message,
+                    permission: permState === 'denied' ? 'denied' : prev.permission
+                }));
+            },
+            {
+                enableHighAccuracy: false, // Fallback to WiFi/IP for speed/reliability
+                timeout: 30000,
+                maximumAge: 0
+            }
+        );
+    }, [geo.latitude, geo.longitude]);
+
+    const setManualLocation = useCallback((lat: number, lon: number) => {
+        setGeo({
+            latitude: lat,
+            longitude: lon,
+            error: null,
+            loading: false,
+            permission: 'granted'
+        });
+    }, []);
+
+    return { ...geo, requestLocation, setManualLocation };
+}
+
+
+
+<celestium-spa/src/hooks/useLunar.ts>
+
+import { useState, useEffect } from 'react';
+import SunCalc from 'suncalc';
+
+export function useLunar() {
+    const [lunarPhase, setLunarPhase] = useState("00");
+
+    useEffect(() => {
+        // Lunar phase changes slowly, no need for rapid updates
+        const update = () => {
+            const now = new Date();
+            const illumination = SunCalc.getMoonIllumination(now);
+
+            // illumination.phase goes from 0.0 (New) -> 0.25 (1st Q) -> 0.5 (Full) -> 0.75 (Last Q) -> 1.0 (New)
+            // We map this to 0-29 scale.
+
+            let phaseIndex = Math.round(illumination.phase * 29);
+            if (phaseIndex > 29) phaseIndex = 0; // Wrap around if needed
+
+            setLunarPhase(phaseIndex.toString().padStart(2, '0'));
+        };
+
+        update();
+        const interval = setInterval(update, 60000); // Update every minute
+        return () => clearInterval(interval);
+    }, []);
+
+    return lunarPhase;
+}
+
+
+
+<celestium-spa/src/hooks/useRotation.ts>
+
+import { useState, useEffect } from 'react';
+import { DateTime } from 'luxon';
+import SunCalc from 'suncalc';
+
+interface RotationProps {
+    mode: 'STANDARD' | 'TRUE_SOLAR';
+    latitude: number | null;
+    longitude: number | null;
+}
+
+export function useRotation({ mode, latitude, longitude }: RotationProps) {
+    const [rotation, setRotation] = useState("000.000");
+
+    useEffect(() => {
+        let frameId: number;
+
+        const tick = () => {
+            const now = DateTime.now();
+
+            if (mode === 'TRUE_SOLAR' && latitude !== null && longitude !== null) {
+                // --- TRUE SOLAR MATH ---
+                // 1. Get the exact moment of Solar Noon for this location
+                // SunCalc expects JS Date
+                const times = SunCalc.getTimes(now.toJSDate(), latitude, longitude);
+                const solarNoon = DateTime.fromJSDate(times.solarNoon);
+
+                // 2. Calculate offset from Noon (180 degrees)
+                // If it's 12:00 PM but Solar Noon is 1:30 PM, we are -90 mins behind zenith.
+                const diffSeconds = now.diff(solarNoon, 'seconds').seconds;
+
+                // 3. Map Time to Degrees
+                // 86400 seconds = 360 degrees
+                // Rotation = 180 (Zenith) + (Difference * DegPerSec)
+                let deg = 180 + (diffSeconds * (360 / 86400));
+
+                // Normalize 0-360
+                if (deg >= 360) deg -= 360;
+                if (deg < 0) deg += 360;
+
+                setRotation(deg.toFixed(3));
+
+            } else {
+                // --- STANDARD MATH ---
+                // Political wall-clock time
+                const startOfDay = now.startOf('day');
+                const diff = now.diff(startOfDay, 'seconds').seconds;
+
+                // Map 86400 seconds -> 360 degrees
+                const deg = (diff / 86400) * 360;
+                setRotation(deg.toFixed(3));
+            }
+
+            frameId = requestAnimationFrame(tick);
+        };
+
+        frameId = requestAnimationFrame(tick);
+        return () => cancelAnimationFrame(frameId);
+    }, [mode, latitude, longitude]);
+
+    return rotation;
+}
+
+
+
+<celestium-spa/src/hooks/useSolar.ts>
+
+import { useState, useEffect } from 'react';
+import { DateTime } from 'luxon';
+import { EQUINOX_TABLE } from '../lib/astronomy';
+
+export interface SolarState {
+    arc: string | null;  // "123.456" or null
+    isNull: boolean;
+    countdown: string | null; // "4 Days 12 Hours..."
+    season: string; // "Winter", "null"
+}
+
+export function useSolar(): SolarState {
+    const [state, setState] = useState<SolarState>({
+        arc: "000.000",
+        isNull: false,
+        countdown: null,
+        season: "Init"
+    });
+
+    useEffect(() => {
+        const tick = () => {
+            const now = DateTime.utc();
+
+            // 1. Find the current/last equinox
+            // We look for the latest equinox that is <= now
+            let lastEquinox = EQUINOX_TABLE[0];
+            let nextEquinox = EQUINOX_TABLE[1];
+
+            for (let i = 0; i < EQUINOX_TABLE.length - 1; i++) {
+                const eq = DateTime.fromISO(EQUINOX_TABLE[i].timestamp, { zone: 'utc' });
+                if (now >= eq) {
+                    lastEquinox = EQUINOX_TABLE[i];
+                    nextEquinox = EQUINOX_TABLE[i + 1];
+                } else {
+                    break; // We passed the target
+                }
+            }
+
+            const start = DateTime.fromISO(lastEquinox.timestamp, { zone: 'utc' });
+            const end = DateTime.fromISO(nextEquinox.timestamp, { zone: 'utc' });
+
+            // 2. Calculate Progress
+            const diff = now.diff(start, 'days');
+            const daysElapsed = diff.days; // Float
+
+            if (daysElapsed <= 360) {
+                // Kinetic Year
+                setState({
+                    arc: daysElapsed.toFixed(3),
+                    isNull: false,
+                    countdown: null,
+                    season: getSeason(daysElapsed)
+                });
+            } else {
+                // Null Interval
+                // Countdown to next equinox
+                const timeToNext = end.diff(now);
+                // Format countdown: "4d 12h 30m 10s"
+                const fmt = timeToNext.toFormat("d'd' h'h' m'm' s's'");
+
+                setState({
+                    arc: null,
+                    isNull: true,
+                    countdown: fmt,
+                    season: "Calibration"
+                });
+            }
+        };
+
+        const interval = setInterval(tick, 1000); // Solar arc doesn't need ms precision
+        tick(); // Initial call
+
+        return () => clearInterval(interval);
+    }, []);
+
+    return state;
+}
+
+function getSeason(degree: number): string {
+    if (degree < 90) return "Spring (Growth)";
+    if (degree < 180) return "Summer (Ascension)";
+    if (degree < 270) return "Autumn (Harvest)";
+    return "Winter (Dormancy)";
+}
+
+
+
+<celestium-spa/src/lib/astronomy.ts>
+
+
+
+export const AEON = "175k";
+export const EPOCH = "358°";
+
+// Table of Vernal Equinoxes (Start of Celestium Year)
+// Format: UTC ISO Strings
+export const EQUINOX_TABLE = [
+    { year: 2024, timestamp: "2024-03-20T03:06:00Z" },
+    { year: 2025, timestamp: "2025-03-20T09:01:00Z" },
+    { year: 2026, timestamp: "2026-03-20T14:46:00Z" },
+    { year: 2027, timestamp: "2027-03-20T20:25:00Z" },
+    { year: 2028, timestamp: "2028-03-20T02:17:00Z" },
+];
+
+export interface CelestiumDate {
+    solarArc: string; // "360.000" or "NULL"
+    rotation: string; // "180.000"
+    lunarPhase: number; // 0-29
+    isNull: boolean;
+    countdown: string | null;
+}
+
+
+
+<celestium-spa/src/store/store.ts>
+
+import { create } from 'zustand';
+
+interface CelestiumState {
+    mode: 'STANDARD' | 'TRUE_SOLAR';
+    setMode: (mode: 'STANDARD' | 'TRUE_SOLAR') => void;
+}
+
+export const useStore = create<CelestiumState>((set) => ({
+    mode: 'STANDARD',
+    setMode: (mode) => set({ mode }),
+}));
+
