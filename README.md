@@ -4,7 +4,7 @@ Planetary OS
 
 > "We do not watch the clock. We watch the sky."
 
-![Celestium Banner](celestium-spa\public\vite.svg) **
+![Celestium Banner](celestium-spa/public/vite.svg) **
 
 ## 🔭 The Mission
 **Celestium** is a rejection of the Gregorian Calendar. It is a spatially-aware coordinate system that replaces arbitrary political labels (Monday, January, 12:00 PM) with raw astronomical telemetry.
