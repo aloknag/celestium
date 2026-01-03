@@ -13,30 +13,38 @@ export function useCelestium() {
 
     // Initialize Geolocation
     const geo = useGeolocation();
+    const {
+        latitude,
+        longitude,
+        loading,
+        error,
+        permission,
+        requestLocation,
+    } = geo;
 
     // Auto-request location if in TRUE_SOLAR mode but no signal (e.g. page refresh)
     useEffect(() => {
         if (mode === 'TRUE_SOLAR') {
-            if (!geo.latitude && !geo.loading && !geo.error && geo.permission === 'prompt') {
-                geo.requestLocation();
-            } else if (geo.permission === 'denied') {
+            if (!latitude && !loading && !error && permission === 'prompt') {
+                requestLocation();
+            } else if (permission === 'denied') {
                 // Safety Eject: If user denied, revert to Standard
                 setMode('STANDARD');
             }
         }
-    }, [mode, geo.latitude, geo.loading, geo.error, geo.requestLocation, geo.permission, setMode]);
+    }, [mode, latitude, loading, error, permission, requestLocation, setMode]);
 
     // Pass Geo data to Rotation Engine
     const rotation = useRotation({
         mode,
-        latitude: geo.latitude,
-        longitude: geo.longitude
+        latitude,
+        longitude
     });
 
     // Handle Mode Switching with Geo Request
     const toggleMode = () => {
         if (mode === 'STANDARD') {
-            geo.requestLocation(); // Ask for permission
+            requestLocation(); // Ask for permission
             setMode('TRUE_SOLAR');
         } else {
             setMode('STANDARD');
