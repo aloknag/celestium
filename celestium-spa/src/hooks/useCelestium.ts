@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { AEON, EPOCH } from '../lib/astronomy';
 import { useSolar } from './useSolar';
 import { useLunar } from './useLunar';
@@ -12,6 +13,18 @@ export function useCelestium() {
 
     // Initialize Geolocation
     const geo = useGeolocation();
+
+    // Auto-request location if in TRUE_SOLAR mode but no signal (e.g. page refresh)
+    useEffect(() => {
+        if (mode === 'TRUE_SOLAR') {
+            if (!geo.latitude && !geo.loading && !geo.error && geo.permission === 'prompt') {
+                geo.requestLocation();
+            } else if (geo.permission === 'denied') {
+                // Safety Eject: If user denied, revert to Standard
+                setMode('STANDARD');
+            }
+        }
+    }, [mode, geo.latitude, geo.loading, geo.error, geo.requestLocation, geo.permission, setMode]);
 
     // Pass Geo data to Rotation Engine
     const rotation = useRotation({
