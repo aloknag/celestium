@@ -65,7 +65,7 @@ export function SidePanel({ constellation, season, mode, geo, onRequestLocation,
                     <span className="text-celestium-dim">PROTOCOL:</span>
                     <button
                         onClick={onToggleMode}
-                        className={`px-2 py-1 rounded border transition-all ${mode === 'TRUE_SOLAR'
+                        className={`px-3 py-2 md:py-1 rounded border transition-all ${mode === 'TRUE_SOLAR'
                             ? 'border-celestium-accent text-celestium-accent shadow-[0_0_8px_rgba(0,255,157,0.3)]'
                             : 'border-celestium-dim text-celestium-dim'
                             }`}
@@ -93,7 +93,7 @@ export function SidePanel({ constellation, season, mode, geo, onRequestLocation,
                             onClick={() => {
                                 onToggleMode();
                             }}
-                            className="w-full py-2 border border-celestium-dim text-celestium-dim text-[10px] tracking-widest hover:border-white hover:text-white transition-colors uppercase"
+                            className="w-full py-3 md:py-2 border border-celestium-dim text-celestium-dim text-[10px] tracking-widest hover:border-white hover:text-white transition-colors uppercase"
                         >
                             Sync Local Vector
                         </button>
@@ -104,14 +104,14 @@ export function SidePanel({ constellation, season, mode, geo, onRequestLocation,
                                 placeholder="LATITUDE"
                                 value={manualLat}
                                 onChange={(e) => setManualLat(e.target.value)}
-                                className="w-full bg-black/50 border border-celestium-dim text-celestium-accent text-xs p-1 outline-none focus:border-celestium-accent"
+                                className="w-full bg-black/50 border border-celestium-dim text-celestium-accent text-base md:text-xs p-1 outline-none focus:border-celestium-accent"
                             />
                             <input
                                 type="number"
                                 placeholder="LONGITUDE"
                                 value={manualLon}
                                 onChange={(e) => setManualLon(e.target.value)}
-                                className="w-full bg-black/50 border border-celestium-dim text-celestium-accent text-xs p-1 outline-none focus:border-celestium-accent"
+                                className="w-full bg-black/50 border border-celestium-dim text-celestium-accent text-base md:text-xs p-1 outline-none focus:border-celestium-accent"
                             />
                             <div className="flex gap-2">
                                 <button
@@ -140,13 +140,13 @@ export function SidePanel({ constellation, season, mode, geo, onRequestLocation,
                             )}
                             <button
                                 onClick={onRequestLocation}
-                                className="w-full py-1 border border-celestium-accent/30 text-celestium-accent/70 text-[10px] tracking-widest hover:bg-celestium-accent/10 transition-colors uppercase"
+                                className="w-full py-3 md:py-2 border border-celestium-accent/30 text-celestium-accent/70 text-[10px] tracking-widest hover:bg-celestium-accent/10 transition-colors uppercase"
                             >
                                 Recalibrate
                             </button>
                             <button
                                 onClick={() => setIsManual(true)}
-                                className="w-full py-1 border border-celestium-dim/30 text-celestium-dim/70 text-[10px] tracking-widest hover:text-white transition-colors uppercase"
+                                className="w-full py-3 md:py-2 border border-celestium-dim/30 text-celestium-dim/70 text-[10px] tracking-widest hover:text-white transition-colors uppercase"
                             >
                                 Manual Override
                             </button>

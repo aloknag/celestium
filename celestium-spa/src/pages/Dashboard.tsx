@@ -28,7 +28,10 @@ export function Dashboard() {
   const tideStatus = isHighTide ? 'High (Spring Tides)' : 'Moderate (Neap Tides)';
 
   return (
-    <div className="w-screen h-screen bg-celestium-bg text-celestium-text font-mono flex flex-col items-center justify-between overflow-hidden selection:bg-celestium-accent selection:text-black">
+    // Root container uses h-[100dvh] (Dynamic Viewport Height) for mobile browser support
+    // and handles scrolling internally via overflow-y-auto.
+    <div className="w-screen h-[100dvh] bg-celestium-bg text-celestium-text font-mono flex flex-col items-center overflow-y-auto overflow-x-hidden selection:bg-celestium-accent selection:text-black scroll-smooth">
+
       {/* HEADER / GOD STRING */}
       <header className="flex flex-col items-center gap-4 z-10 w-full p-4 md:p-8 shrink-0">
         <h1 className="text-xs md:text-sm tracking-[0.4em] text-celestium-dim uppercase">Celestium</h1>
@@ -63,43 +66,18 @@ export function Dashboard() {
         </div>
 
         {/* UNIVERSAL SYNTAX (Helper) */}
-        <div className="text-[10px] md:text-xs tracking-widest text-celestium-dim text-center max-w-2xl">
+        <div className="text-[10px] md:text-xs tracking-widest text-celestium-dim text-center max-w-2xl hidden md:block">
           <div className="uppercase tracking-[0.25em] opacity-70">The Universal Syntax</div>
           <div className="mt-1">
-            <span
-              className="underline decoration-dotted underline-offset-2 cursor-help"
-              title="The Aeon: deep-time odometer (precession cycles since the Moon formed)."
-            >
-              [THE AEON]
-            </span>
+            <span className="underline decoration-dotted underline-offset-2 cursor-help" title="The Aeon">[AEON]</span>
             <span className="mx-1">::</span>
-            <span
-              className="underline decoration-dotted underline-offset-2 cursor-help"
-              title="The Epoch: progress through the current precession cycle (Polaris era angle)."
-            >
-              [THE EPOCH]
-            </span>
+            <span className="underline decoration-dotted underline-offset-2 cursor-help" title="The Epoch">[EPOCH]</span>
             <span className="mx-1">.</span>
-            <span
-              className="underline decoration-dotted underline-offset-2 cursor-help"
-              title="Solar Arc: Earth’s orbital position since the Vernal Equinox (0–360)."
-            >
-              [SOLAR ARC]
-            </span>
+            <span className="underline decoration-dotted underline-offset-2 cursor-help" title="Solar Arc">[ARC]</span>
             <span className="mx-1">.</span>
-            <span
-              className="underline decoration-dotted underline-offset-2 cursor-help"
-              title="Lunar Phase: Moon illumination index (00–29)."
-            >
-              [LUNAR PHASE]
-            </span>
+            <span className="underline decoration-dotted underline-offset-2 cursor-help" title="Lunar Phase">[PHASE]</span>
             <span className="mx-1">|</span>
-            <span
-              className="underline decoration-dotted underline-offset-2 cursor-help"
-              title="Rotation: your local spin angle relative to the Sun (0–360°)."
-            >
-              [ROTATION]
-            </span>
+            <span className="underline decoration-dotted underline-offset-2 cursor-help" title="Rotation">[ROTATION]</span>
           </div>
         </div>
 
@@ -112,10 +90,9 @@ export function Dashboard() {
       </header>
 
       {/* MID SECTION: Responsive Container */}
-      {/* On Mobile: Flex-col, SidePanel (order 2) below Visualizer */}
-      {/* On Desktop: Flex-row, SidePanel (order 1) left of Visualizer */}
-      <div className="flex-1 w-full max-w-6xl flex flex-col md:flex-row items-center justify-center gap-4 md:gap-12 relative px-4 pb-4 md:py-8 overflow-hidden">
-        {/* LEFT PANEL */}
+      <div className="w-full max-w-6xl flex flex-col md:flex-row items-center justify-center gap-12 md:gap-12 relative px-4 pb-12 md:py-8 shrink-0">
+
+        {/* LEFT PANEL (Order 2 on mobile, Order 1 on desktop) */}
         <SidePanel
           constellation={starSystem}
           season={solar.season}
@@ -126,9 +103,8 @@ export function Dashboard() {
           onManualLocation={geoStatus.setManualLocation}
         />
 
-        {/* VISUALIZER Container */}
-        {/* ensure it shrinks to fit available space */}
-        <main className="flex-1 flex items-center justify-center relative w-full h-full max-h-[50vh] md:max-h-full min-h-0 order-1 md:order-2">
+        {/* VISUALIZER Container (Order 1 on mobile, Order 2 on desktop) */}
+        <main className="flex items-center justify-center relative w-full max-w-[500px] md:max-w-none md:w-auto md:flex-1 h-auto md:h-full min-h-0 order-1 md:order-2">
           {/* Background Grid Lines */}
           <div className="absolute inset-0 border-[0.5px] border-celestium-dim opacity-30 pointer-events-none rounded-full scale-150" />
           <Visualizer
@@ -139,12 +115,12 @@ export function Dashboard() {
           />
         </main>
 
-        {/* LEGEND PANEL */}
+        {/* LEGEND PANEL (Order 3) */}
         <LegendPanel />
       </div>
 
       {/* FOOTER / DECODE */}
-      <footer className="w-full max-w-6xl grid grid-cols-1 md:grid-cols-3 gap-6 md:items-center text-xs md:text-sm tracking-widest text-celestium-dim border-t border-celestium-dim/30 pt-4 pb-6 px-8">
+      <footer className="w-full max-w-6xl mt-auto grid grid-cols-1 md:grid-cols-3 gap-6 md:items-center text-xs md:text-sm tracking-widest text-celestium-dim border-t border-celestium-dim/30 pt-4 pb-6 px-8 shrink-0">
         {/* Left Col: System Status */}
         <div className="flex flex-col gap-1 text-center md:text-left">
           <span className="uppercase text-celestium-accent opacity-50">System Status</span>
@@ -156,9 +132,9 @@ export function Dashboard() {
         <div className="flex items-center justify-center">
           <Link
             to="/help"
-            className="text-xs md:text-sm tracking-[0.35em] uppercase text-white hover:text-white transition-colors"
+            className="text-xs md:text-sm tracking-[0.35em] uppercase text-white hover:text-white transition-colors border border-white/20 px-4 py-2 hover:bg-white/5"
           >
-            [ WHAT IS CELESTIUM? ]
+            [ SYSTEM MANUAL ]
           </Link>
         </div>
 
@@ -170,7 +146,7 @@ export function Dashboard() {
       </footer>
 
       {/* Version Tag */}
-      <div className="absolute bottom-2 right-4 text-[10px] text-celestium-dim opacity-20">
+      <div className="text-[10px] text-celestium-dim opacity-20 py-2">
         CELESTIUM.SYS // {aeon}.{epoch}
       </div>
     </div>
