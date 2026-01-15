@@ -15,23 +15,55 @@ html {
 body {
   margin: 0;
   overflow: hidden;
+  /* [NEW] Tabular Nums prevents jitter */
+  font-variant-numeric: tabular-nums; 
   font-feature-settings: "tnum";
-  /* Scanline Base */
-  background: radial-gradient(circle at center, #111 0%, #050505 100%);
+  /* [UPDATED] Atmospheric Obsidian Base */
+  background: radial-gradient(circle at 50% 50%, #161b22 0%, #050505 80%);
 }
 
 @layer utilities {
-  .glow-text {
-    text-shadow: 0 0 10px rgba(0, 255, 157, 0.4), 0 0 20px rgba(0, 255, 157, 0.1);
+  .glow-solar {
+    text-shadow: 0 0 10px rgba(255, 184, 0, 0.5), 0 0 20px rgba(255, 184, 0, 0.2);
+  }
+  .glow-observer {
+    text-shadow: 0 0 10px rgba(0, 209, 255, 0.5), 0 0 20px rgba(0, 209, 255, 0.2);
+  }
+  .glow-lunar {
+    text-shadow: 0 0 8px rgba(224, 224, 224, 0.4), 0 0 16px rgba(224, 224, 224, 0.15);
   }
 
   .text-celestium-null.glow-text {
     text-shadow: 0 0 10px rgba(255, 51, 51, 0.5), 0 0 20px rgba(255, 51, 51, 0.2);
   }
 
-  .text-celestium-accent {
-    color: #00ff9d;
+  .label-dim {
+    @apply text-slate-300 text-[10px] tracking-widest font-sans uppercase;
   }
+}
+
+@layer components {
+  .panel-glass {
+    @apply bg-white/[0.08] border border-white/10 backdrop-blur-2xl shadow-glass;
+    background-clip: padding-box;
+  }
+  .widget-glass {
+    @apply bg-white/5 border border-white/5 backdrop-blur-xl;
+  }
+}
+
+/* [NEW] FILM GRAIN OVERLAY */
+body::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.03; /* Slightly reduced for cleaner look */
+  pointer-events: none;
+  z-index: 900;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='1'/%3E%3C/svg%3E");
 }
 
 /* SCANLINE OVERLAY */
@@ -43,13 +75,11 @@ body::after {
   left: 0;
   bottom: 0;
   right: 0;
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%,
-      rgba(0, 0, 0, 0.1) 50%);
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
   background-size: 100% 4px;
-  /* Scanline height */
   z-index: 1000;
   pointer-events: none;
-  opacity: 0.6;
+  opacity: 0.15;
 }
 
 /* Subtle Flicker */

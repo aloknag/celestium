@@ -11,6 +11,34 @@
 - Lint: `npm run lint`
 - Preview production build: `npm run preview`
 
+## Verification workflow (required)
+When making code changes, follow this order unless the user explicitly asks otherwise:
+1. Implement the change (minimal, spec-driven).
+2. Run lint: `npm run lint`
+3. Run typecheck + build: `npm run build`
+4. Run Playwright MCP smoke tests (see checklist below) against the dev server.
+
+If the dev server is needed:
+- Start it from `celestium-spa/` with `npm run dev`.
+- If the default port is busy, Vite will pick another (e.g. `5174`). Use the printed URL.
+
+### Playwright MCP smoke-test checklist
+Use the Playwright MCP browser tools (snapshot/click/type/wait) to verify UX after changes.
+Keep tests simple and spec-aligned (no extra flows).
+
+Run these checks (adapt only if the change doesn’t touch that area):
+1. **App loads**: Dashboard renders without console errors; main HUD visible.
+2. **God String legibility**: AEON/EPOCH/ARC/PHASE/ROTATION read clearly; punctuation visible.
+3. **Mode toggle**: Toggling ISO ⇄ TRUE_SOLAR updates protocol badge and does not crash.
+4. **ISO uninitialized state**: In ISO/Standard, LAT/LON labels are readable; values show placeholder and look intentionally uninitialized.
+5. **Geolocation flow (if available)**: Trigger location request; status text changes appropriately.
+6. **Visualizer visibility**: Ring + constellations remain visible when not focused; focused-sector interactions don’t “black out” the scene.
+7. **Responsive layout**: Desktop (e.g. 1280×800) does not overflow vertically; visualizer constrained; header/panels fit.
+8. **Typography**: Labels use sans font where intended; numbers remain mono; no missing-font flash that breaks layout.
+
+## Planning requirement
+If you create a plan (TODOs), include a short section listing the Playwright MCP smoke tests you will run for that specific change (subset of the checklist above).
+
 ## Big picture architecture (data flow)
 - `App.tsx` renders the HUD/visualizer and composes the core hooks.
 - `useCelestium()` (see `src/hooks/useCelestium.ts`) is the orchestrator:

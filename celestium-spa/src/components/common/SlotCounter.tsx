@@ -35,13 +35,13 @@ function Digit({ char, className }: { char: string; className: string }) {
                         animate={{ y: "0%", opacity: 1, filter: "blur(0px)" }}
                         exit={{ y: "-100%", opacity: 0, filter: "blur(2px)" }}
                         transition={{ duration: 0.2, ease: "easeOut" }}
-                        className="absolute inset-0 flex items-center justify-center"
+                        className="absolute inset-0 flex items-center justify-center text-current"
                     >
                         {char}
                     </motion.span>
                 </AnimatePresence>
             ) : (
-                <span className="flex items-center justify-center">{char}</span>
+                <span className="flex items-center justify-center text-current">{char}</span>
             )}
         </div>
     );

@@ -17,10 +17,7 @@ interface SidePanelProps {
 }
 
 export function SidePanel({ constellation, season, mode, geo, onRequestLocation, onToggleMode, onManualLocation }: SidePanelProps) {
-
-    // Helper to format coords
     const fmt = (n: number | null) => (n !== null) ? n.toFixed(4) : "---.----";
-
     const [isManual, setIsManual] = useState(false);
     const [manualLat, setManualLat] = useState("");
     const [manualLon, setManualLon] = useState("");
@@ -39,34 +36,34 @@ export function SidePanel({ constellation, season, mode, geo, onRequestLocation,
             initial={{ opacity: 0, x: -50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.5 }}
-            className="flex md:flex-col flex-row justify-between md:justify-center items-center md:items-stretch gap-4 md:gap-8 w-full md:w-64 p-4 md:p-6 border-t md:border-t-0 md:border-r border-celestium-dim/20 bg-celestium-bg/50 backdrop-blur-sm order-2 md:order-1"
+            className="panel-glass flex flex-col justify-center items-stretch gap-6 md:gap-8 w-full md:w-64 order-2 md:order-1"
         >
-            {/* ... (Constellation Section unchanged) ... */}
+            {/* --- COSMIC SECTOR --- */}
             <div className="flex flex-col gap-2">
-                <h3 className="text-xs uppercase tracking-[0.2em] text-celestium-accent opacity-50 border-b border-celestium-accent/20 pb-2 mb-2">
+                <h3 className="text-[10px] uppercase tracking-[0.2em] text-celestium-solar font-sans opacity-80 border-b border-celestium-solar/30 pb-2 mb-2">
                     Cosmic Sector
                 </h3>
                 <div className="text-2xl text-white font-bold tracking-widest glow-text">
                     {constellation}
                 </div>
-                <div className="text-xs text-celestium-dim uppercase tracking-widest">
+                <div className="text-xs text-slate-400 uppercase tracking-widest">
                     {season}
                 </div>
             </div>
 
-            {/* GEOLOCATION DATA */}
+            {/* --- OBSERVATION DECK (Restored) --- */}
             <div className="flex flex-col gap-2">
-                <h3 className="text-xs uppercase tracking-[0.2em] text-celestium-accent opacity-50 border-b border-celestium-accent/20 pb-2 mb-2">
+                <h3 className="text-[10px] uppercase tracking-[0.2em] text-celestium-solar font-sans opacity-80 border-b border-celestium-solar/30 pb-2 mb-2">
                     Observation Deck
                 </h3>
 
                 {/* MODE TOGGLE */}
                 <div className="flex items-center justify-between text-xs tracking-wider mb-2">
-                    <span className="text-celestium-dim">PROTOCOL:</span>
+                    <span className="text-slate-400 text-[10px]">PROTOCOL:</span>
                     <button
                         onClick={onToggleMode}
                         className={`px-3 py-2 md:py-1 rounded border transition-all ${mode === 'TRUE_SOLAR'
-                            ? 'border-celestium-accent text-celestium-accent shadow-[0_0_8px_rgba(0,255,157,0.3)]'
+                            ? 'border-celestium-observer text-celestium-observer shadow-[0_0_8px_rgba(0,209,255,0.3)]'
                             : 'border-celestium-dim text-celestium-dim'
                             }`}
                     >
@@ -75,15 +72,25 @@ export function SidePanel({ constellation, season, mode, geo, onRequestLocation,
                 </div>
 
                 {/* COORDS */}
-                <div className="flex flex-col gap-1 font-mono text-xs text-celestium-text/80">
+                <div className="flex flex-col gap-1 font-mono text-xs">
                     <div className="flex justify-between">
-                        <span className="text-celestium-dim">LAT:</span>
-                        <span>{fmt(geo.latitude)}</span>
+                        <span className="text-[9px] uppercase tracking-widest text-white/50">LAT:</span>
+                        <span className={`${mode === 'STANDARD' ? 'text-white/20' : (geo.latitude !== null ? 'text-celestium-observer' : 'text-white/20')} font-mono`}>
+                            {fmt(geo.latitude)}
+                        </span>
                     </div>
                     <div className="flex justify-between">
-                        <span className="text-celestium-dim">LON:</span>
-                        <span>{fmt(geo.longitude)}</span>
+                        <span className="text-[9px] uppercase tracking-widest text-white/50">LON:</span>
+                        <span className={`${mode === 'STANDARD' ? 'text-white/20' : (geo.longitude !== null ? 'text-celestium-observer' : 'text-white/20')} font-mono`}>
+                            {fmt(geo.longitude)}
+                        </span>
                     </div>
+
+                    {mode === 'STANDARD' && (
+                        <div className="text-[9px] text-center tracking-[0.2em] mt-2 text-white/30">
+                            AWAITING LOCAL CALIBRATION
+                        </div>
+                    )}
                 </div>
 
                 {/* STATUS / ACTION */}
@@ -104,14 +111,14 @@ export function SidePanel({ constellation, season, mode, geo, onRequestLocation,
                                 placeholder="LATITUDE"
                                 value={manualLat}
                                 onChange={(e) => setManualLat(e.target.value)}
-                                className="w-full bg-black/50 border border-celestium-dim text-celestium-accent text-base md:text-xs p-1 outline-none focus:border-celestium-accent"
+                                className="w-full bg-black/50 border border-celestium-dim text-celestium-observer text-base md:text-xs p-1 outline-none focus:border-celestium-observer"
                             />
                             <input
                                 type="number"
                                 placeholder="LONGITUDE"
                                 value={manualLon}
                                 onChange={(e) => setManualLon(e.target.value)}
-                                className="w-full bg-black/50 border border-celestium-dim text-celestium-accent text-base md:text-xs p-1 outline-none focus:border-celestium-accent"
+                                className="w-full bg-black/50 border border-celestium-dim text-celestium-observer text-base md:text-xs p-1 outline-none focus:border-celestium-observer"
                             />
                             <div className="flex gap-2">
                                 <button
@@ -153,7 +160,7 @@ export function SidePanel({ constellation, season, mode, geo, onRequestLocation,
                         </div>
                     )}
                 </div>
-            </div >
-        </motion.div >
+            </div>
+        </motion.div>
     );
 }

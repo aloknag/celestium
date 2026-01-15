@@ -11,3 +11,7 @@ yarn-debug.log*
 yarn-error.log*
 
 celestium-spa/app.txt
+
+
+## Ignore playwright-mcp reports
+.playwright-mcp
