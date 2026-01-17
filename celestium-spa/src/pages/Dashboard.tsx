@@ -1,11 +1,15 @@
+import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useCallback } from 'react';
 
 import { SlotCounter } from '../components/common/SlotCounter';
-import { LegendPanel } from '../components/HUD/LegendPanel';
+import { RightPanel } from '../components/HUD/RightPanel';
 import { SidePanel } from '../components/HUD/SidePanel';
 import { Visualizer } from '../components/HUD/Visualizer';
 import { useCelestium } from '../hooks/useCelestium';
 import { useConstellation } from '../hooks/useConstellation';
+import { useStore } from '../store/store';
+import type { CosmicSector } from '../store/store';
 
 export function Dashboard() {
   const {
@@ -19,69 +23,93 @@ export function Dashboard() {
     geoStatus
   } = useCelestium();
 
-  // 1. Get the Star System
-  const starSystem = useConstellation(solar.arc);
+  const { focusedSector, setFocusedSector } = useStore();
 
-  // Tides Logic
+  const getInteractionProps = useCallback((sector: CosmicSector) => {
+    const isFocused = focusedSector === sector;
+    const isBlurred = focusedSector && !isFocused;
+
+    return {
+      onMouseEnter: () => setFocusedSector(sector),
+      onMouseLeave: () => setFocusedSector(null),
+      onClick: () => setFocusedSector(isFocused ? null : sector),
+      className: `cursor-help transition-all duration-300 px-1 py-1 rounded hover:bg-white/5 ${isBlurred ? 'opacity-30 blur-[1px]' : 'opacity-100'
+        } ${isFocused ? 'scale-110' : ''}`
+    };
+  }, [focusedSector, setFocusedSector]);
+
+  const starSystem = useConstellation(solar.arc);
   const lp = parseInt(lunarPhase, 10);
   const isHighTide = (lp <= 3) || (lp >= 12 && lp <= 18) || (lp >= 27);
   const tideStatus = isHighTide ? 'High (Spring Tides)' : 'Moderate (Neap Tides)';
 
   return (
-    // Root container uses h-[100dvh] (Dynamic Viewport Height) for mobile browser support
-    // and handles scrolling internally via overflow-y-auto.
-    <div className="w-screen h-[100dvh] bg-celestium-bg text-celestium-text font-mono flex flex-col items-center overflow-y-auto overflow-x-hidden selection:bg-celestium-accent selection:text-black scroll-smooth">
+    // ROOT: 
+    // - h-[100dvh]: Exact viewport height.
+    // - overflow-y-auto: Allow scroll on mobile.
+    // - md:overflow-hidden: KILL scroll on desktop.
+    <div className="w-screen h-[100dvh] bg-celestium-bg text-celestium-text font-mono flex flex-col items-center overflow-y-auto md:overflow-hidden selection:bg-celestium-gold selection:text-black">
 
-      {/* HEADER / GOD STRING */}
-      <header className="flex flex-col items-center gap-4 z-10 w-full p-4 md:p-8 shrink-0">
-        <h1 className="text-xs md:text-sm tracking-[0.4em] text-celestium-dim uppercase">Celestium</h1>
-
-        {/* LIVE GOD STRING */}
-        <div
-          className={`text-xl md:text-3xl lg:text-4xl tracking-widest font-bold text-center glow-text transition-colors duration-500 flex items-center justify-center gap-2 md:gap-4 ${solar.isNull ? 'text-celestium-null' : 'text-celestium-text'}`}
+      {/* HEADER: Rigid Height (shrink-0) */}
+      <header className="flex flex-col items-center gap-4 z-10 w-full p-4 shrink-0">
+        <motion.h1
+          initial={{ opacity: 0, letterSpacing: "0em", filter: "blur(10px)" }}
+          animate={{ opacity: 1, letterSpacing: "0.4em", filter: "blur(0px)" }}
+          transition={{ duration: 1.5, ease: "circOut" }}
+          className="text-xs md:text-sm text-celestium-text font-mono uppercase font-bold tracking-[0.4em] opacity-80 glow-text"
         >
-          <div className="flex items-center gap-2">
-            <span>{aeon}</span>
-            <span className="text-celestium-dim">::</span>
-            <span>{epoch}</span>
-            <span className="text-celestium-dim">.</span>
-          </div>
+          Celestium
+        </motion.h1>
 
-          {solar.isNull ? (
-            <span className="text-celestium-null animate-pulse">NULL</span>
-          ) : (
-            <SlotCounter
-              value={Math.floor(parseFloat(solar.arc || '0'))
-                .toString()
-                .padStart(3, '0')}
-            />
-          )}
+        {/* GOD STRING */}
+        <div className={`text-sm sm:text-lg md:text-3xl lg:text-4xl tracking-widest font-bold text-center transition-colors duration-500 flex flex-wrap items-center justify-center gap-2 sm:gap-2 md:gap-4 ${solar.isNull ? 'text-celestium-null' : ''}`}>
 
-          <span className="text-celestium-dim">.</span>
-          <SlotCounter value={lunarPhase.toString()} />
+          {(() => {
+            const p = getInteractionProps('AEON'); return (
+              <div {...p} className={`flex items-center gap-2 text-celestium-dim ${p.className}`}>
+                <span>{aeon}</span>
+                <span className="text-white/20">::</span>
+                <span>{epoch}</span>
+                <span className="text-white/20">.</span>
+              </div>
+            );
+          })()}
 
-          <span className="text-celestium-dim">|</span>
-          <SlotCounter value={rotation} />
-          <span className="text-celestium-dim">°</span>
+          {(() => {
+            const p = getInteractionProps('ARC'); return (
+              <div {...p} className={`flex items-center text-celestium-gold glow-solar ${p.className}`}>
+                {solar.isNull ? (
+                  <span className="text-celestium-null animate-pulse">NULL</span>
+                ) : (
+                  <SlotCounter value={Math.floor(parseFloat(solar.arc || '0')).toString().padStart(3, '0')} />
+                )}
+              </div>
+            );
+          })()}
+
+          <span className="text-white/20">.</span>
+
+          {(() => {
+            const p = getInteractionProps('PHASE'); return (
+              <div {...p} className={`text-celestium-cyan glow-observer ${p.className}`}>
+                <SlotCounter value={lunarPhase.toString()} />
+              </div>
+            );
+          })()}
+
+          <span className="text-white/20">|</span>
+
+          {(() => {
+            const p = getInteractionProps('ROTATION'); return (
+              <div {...p} className={`flex items-center text-celestium-cyan glow-observer ${p.className}`}>
+                <SlotCounter value={rotation} />
+                <span className="text-celestium-dim ml-1">°</span>
+              </div>
+            );
+          })()}
         </div>
 
-        {/* UNIVERSAL SYNTAX (Helper) */}
-        <div className="text-[10px] md:text-xs tracking-widest text-celestium-dim text-center max-w-2xl hidden md:block">
-          <div className="uppercase tracking-[0.25em] opacity-70">The Universal Syntax</div>
-          <div className="mt-1">
-            <span className="underline decoration-dotted underline-offset-2 cursor-help" title="The Aeon">[AEON]</span>
-            <span className="mx-1">::</span>
-            <span className="underline decoration-dotted underline-offset-2 cursor-help" title="The Epoch">[EPOCH]</span>
-            <span className="mx-1">.</span>
-            <span className="underline decoration-dotted underline-offset-2 cursor-help" title="Solar Arc">[ARC]</span>
-            <span className="mx-1">.</span>
-            <span className="underline decoration-dotted underline-offset-2 cursor-help" title="Lunar Phase">[PHASE]</span>
-            <span className="mx-1">|</span>
-            <span className="underline decoration-dotted underline-offset-2 cursor-help" title="Rotation">[ROTATION]</span>
-          </div>
-        </div>
-
-        {/* REAL NULL INTERVAL COUNTDOWN */}
+        {/* NULL COUNTDOWN */}
         {solar.isNull && (
           <div className="text-celestium-null text-lg animate-pulse mt-2">
             ALIGNMENT PENDING... [{solar.countdown}]
@@ -89,10 +117,24 @@ export function Dashboard() {
         )}
       </header>
 
-      {/* MID SECTION: Responsive Container */}
-      <div className="w-full max-w-6xl flex flex-col md:flex-row items-center justify-center gap-12 md:gap-12 relative px-4 pb-12 md:py-8 shrink-0">
+      {/* MID SECTION: THE FLEX FIX 
+          - flex-1: Take ONLY remaining space.
+          - min-h-0: Allow shrinking below content size (prevents blowout).
+          - py-4: Small padding to prevent edge touching.
+      */}
+      <motion.div
+        className="w-full max-w-7xl shrink-0 md:flex-1 md:min-h-0 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 px-4 py-4 md:py-0 relative"
+        initial={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
+        animate={mode === 'TRUE_SOLAR' ? {
+          opacity: 1, scale: 0.95, filter: "blur(0px)", rotateX: 8, y: 20
+        } : {
+          opacity: 1, scale: 1, filter: "blur(0px)", rotateX: 0, y: 0
+        }}
+        transition={{ duration: 1.2, ease: "circOut" }}
+        style={{ perspective: "1000px", transformStyle: "preserve-3d" }}
+      >
 
-        {/* LEFT PANEL (Order 2 on mobile, Order 1 on desktop) */}
+        {/* PANELS: Self-align center */}
         <SidePanel
           constellation={starSystem}
           season={solar.season}
@@ -103,10 +145,16 @@ export function Dashboard() {
           onManualLocation={geoStatus.setManualLocation}
         />
 
-        {/* VISUALIZER Container (Order 1 on mobile, Order 2 on desktop) */}
-        <main className="flex items-center justify-center relative w-full max-w-[500px] md:max-w-none md:w-auto md:flex-1 h-auto md:h-full min-h-0 order-1 md:order-2">
+        {/* VISUALIZER CONTAINER: 
+            - h-auto: Natural height on mobile.
+            - md:h-full: Fill the flex container on desktop.
+            - md:max-h-full: Never exceed the flex container.
+            - aspect-square: Keep it round.
+        */}
+        <main className="relative w-full max-w-[340px] md:max-w-none md:w-auto md:h-full md:max-h-full aspect-square flex items-center justify-center order-1 md:order-2">
           {/* Background Grid Lines */}
-          <div className="absolute inset-0 border-[0.5px] border-celestium-dim opacity-30 pointer-events-none rounded-full scale-150" />
+          <div className="absolute inset-0 border-[0.5px] border-celestium-dim opacity-10 pointer-events-none rounded-full scale-110" />
+
           <Visualizer
             solarArc={parseFloat(solar.arc || '0')}
             rotation={parseFloat(rotation)}
@@ -115,15 +163,14 @@ export function Dashboard() {
           />
         </main>
 
-        {/* LEGEND PANEL (Order 3) */}
-        <LegendPanel />
-      </div>
+        <RightPanel geo={geoStatus} />
 
-      {/* FOOTER / DECODE */}
-      <footer className="w-full max-w-6xl mt-auto grid grid-cols-1 md:grid-cols-3 gap-6 md:items-center text-xs md:text-sm tracking-widest text-celestium-dim border-t border-celestium-dim/30 pt-4 pb-6 px-8 shrink-0">
-        {/* Left Col: System Status */}
+      </motion.div>
+
+      {/* FOOTER: Rigid Height (shrink-0) */}
+      <footer className="w-full max-w-6xl shrink-0 grid grid-cols-1 md:grid-cols-3 gap-6 md:items-center text-xs md:text-sm tracking-widest text-celestium-dim border-t border-white/10 pt-4 pb-4 px-8">
         <div className="flex flex-col gap-1 text-center md:text-left">
-          <span className="uppercase text-celestium-accent opacity-50">System Status</span>
+          <span className="uppercase text-celestium-gold opacity-50">System Status</span>
           <span className={solar.isNull ? 'text-celestium-null' : 'text-white'}>
             {solar.isNull ? 'NULL INTERVAL' : 'KINETIC YEAR'}
           </span>
@@ -138,15 +185,14 @@ export function Dashboard() {
           </Link>
         </div>
 
-        {/* Right Col: Lunar */}
         <div className="flex flex-col gap-1 text-center md:text-right">
-          <span className="uppercase text-celestium-accent opacity-50">Lunar Effects</span>
+          <span className="uppercase text-celestium-cyan opacity-50">Lunar Effects</span>
           <span className="text-white">{tideStatus}</span>
         </div>
       </footer>
 
       {/* Version Tag */}
-      <div className="text-[10px] text-celestium-dim opacity-20 py-2">
+      <div className="text-[10px] text-celestium-dim opacity-20 py-2 shrink-0">
         CELESTIUM.SYS // {aeon}.{epoch}
       </div>
     </div>

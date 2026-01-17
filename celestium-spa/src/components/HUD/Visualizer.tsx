@@ -1,6 +1,9 @@
 import { motion } from 'framer-motion';
 import type { FC } from 'react';
+import { useCallback } from 'react'; // [FIX] Import useCallback
 import { CONSTELLATIONS } from '../../hooks/useConstellation';
+// [NEW] Import Store
+import { useStore } from '../../store/store';
 
 interface VisualizerProps {
     solarArc: number | null; // 0-360
@@ -10,6 +13,19 @@ interface VisualizerProps {
 }
 
 export const Visualizer: FC<VisualizerProps> = ({ solarArc, rotation, lunarPhase, isNull }) => {
+    // [NEW] Get Focus State
+    const { focusedSector } = useStore();
+
+    // [NEW] Helper for Opacity Logic
+    const getOpacity = useCallback((group: 'RING' | 'MOON' | 'DAY') => {
+        if (!focusedSector) return 1;
+        switch (group) {
+            case 'RING': return (focusedSector === 'ARC' || focusedSector === 'AEON') ? 1 : 0.4;
+            case 'MOON': return focusedSector === 'PHASE' ? 1 : 0.4;
+            case 'DAY': return focusedSector === 'ROTATION' ? 1 : 0.4;
+        }
+    }, [focusedSector]);
+
     // Conversions for SVG
     const size = 600;
     const center = size / 2;
@@ -91,10 +107,10 @@ export const Visualizer: FC<VisualizerProps> = ({ solarArc, rotation, lunarPhase
 
         return (
             <g key={c.name}>
-                <line x1={lx1} y1={ly1} x2={lx2} y2={ly2} stroke={isActive ? "#00ff9d" : "rgba(255,255,255,0.1)"} strokeWidth="1" />
+                <line x1={lx1} y1={ly1} x2={lx2} y2={ly2} stroke={isActive ? "#FFB800" : "rgba(255,255,255,0.2)"} strokeWidth="1" />
                 <text
                     x={x} y={y}
-                    fill={isActive ? "#fff" : "rgba(255,255,255,0.3)"}
+                    fill={isActive ? "#fff" : "rgba(255,255,255,0.2)"}
                     fontSize="10"
                     textAnchor="middle"
                     alignmentBaseline="middle"
@@ -132,10 +148,10 @@ export const Visualizer: FC<VisualizerProps> = ({ solarArc, rotation, lunarPhase
         <div className="relative flex items-center justify-center w-full max-w-[600px] aspect-square">
             <svg className="w-full h-full" viewBox={`0 0 ${size} ${size}`}>
                 <defs>
-                    {/* Solar Gradient: Neon Green to Transparent */}
+                    {/* Solar Gradient: Gold for the Sun Path */}
                     <linearGradient id="solarGradient" x1="0%" y1="0%" x2="100%" y2="0%" gradientTransform="rotate(90)">
-                        <stop offset="0%" stopColor="#00ff9d" stopOpacity="1" />
-                        <stop offset="100%" stopColor="#00ff9d" stopOpacity="0" />
+                        <stop offset="0%" stopColor="#FFB800" stopOpacity="1" />
+                        <stop offset="100%" stopColor="#FFB800" stopOpacity="0" />
                     </linearGradient>
 
                     {/* MOON MASK (The Spotlight) */}
@@ -158,117 +174,120 @@ export const Visualizer: FC<VisualizerProps> = ({ solarArc, rotation, lunarPhase
                     </mask>
                 </defs>
 
-                {/* 1. CONSTELLATION RING */}
-                <g>{constellationsRender}</g>
+                {/* --- GROUP 1: SOLAR ARC (Constellations + Year Ring) --- */}
+                <g style={{ opacity: getOpacity('RING'), transition: 'opacity 0.4s ease-out' }}>
+                    {/* 1. CONSTELLATION RING */}
+                    <g>{constellationsRender}</g>
 
-                {/* YEAR RING (Background Track) */}
-                <circle cx={center} cy={center} r={yearRadius} stroke={isNull ? "rgba(255, 51, 51, 0.2)" : "rgba(255, 255, 255, 0.15)"} strokeWidth="2" fill="none" />
+                    {/* YEAR RING (Background Track) */}
+                    <circle cx={center} cy={center} r={yearRadius} stroke={isNull ? "rgba(255, 51, 51, 0.2)" : "rgba(255, 255, 255, 0.15)"} strokeWidth="2" fill="none" />
 
-                {/* SEASONAL MARKERS (Equinox/Solstice Hints) */}
-                <g>
-                    {seasonalMarkers.map((m) => {
-                        const isActive = !isNull && angularDistance(safeArc, m.angle) < 1;
-                        const lineRad = (m.angle - 90) * (Math.PI / 180);
-                        const r1 = yearRadius - 2;
-                        const r2 = yearRadius + 12;
-                        const x1 = center + Math.cos(lineRad) * r1;
-                        const y1 = center + Math.sin(lineRad) * r1;
-                        const x2 = center + Math.cos(lineRad) * r2;
-                        const y2 = center + Math.sin(lineRad) * r2;
-                        const tx = center + Math.cos(lineRad) * (yearRadius + 24);
-                        const ty = center + Math.sin(lineRad) * (yearRadius + 24);
+                    {/* SEASONAL MARKERS (Equinox/Solstice Hints) */}
+                    <g>
+                        {seasonalMarkers.map((m) => {
+                            const isActive = !isNull && angularDistance(safeArc, m.angle) < 1;
+                            const lineRad = (m.angle - 90) * (Math.PI / 180);
+                            const r1 = yearRadius - 2;
+                            const r2 = yearRadius + 12;
+                            const x1 = center + Math.cos(lineRad) * r1;
+                            const y1 = center + Math.sin(lineRad) * r1;
+                            const x2 = center + Math.cos(lineRad) * r2;
+                            const y2 = center + Math.sin(lineRad) * r2;
+                            const tx = center + Math.cos(lineRad) * (yearRadius + 24);
+                            const ty = center + Math.sin(lineRad) * (yearRadius + 24);
 
-                        return (
-                            <g key={`seasonal-${m.angle}`}>
-                                <title>{m.title}</title>
-                                <line
-                                    x1={x1}
-                                    y1={y1}
-                                    x2={x2}
-                                    y2={y2}
-                                    stroke={isActive ? '#00ff9d' : 'rgba(255,255,255,0.18)'}
-                                    strokeWidth={isActive ? 2 : 1}
-                                />
-                                <text
-                                    x={tx}
-                                    y={ty}
-                                    fill={isActive ? '#fff' : 'rgba(255,255,255,0.35)'}
-                                    fontSize="9"
-                                    textAnchor="middle"
-                                    alignmentBaseline="middle"
-                                    fontFamily="monospace"
-                                    style={{ textShadow: isActive ? '0 0 10px white' : 'none' }}
-                                >
-                                    {m.label}
-                                </text>
-                            </g>
-                        );
-                    })}
-                </g>
+                            return (
+                                <g key={`seasonal-${m.angle}`}>
+                                    <title>{m.title}</title>
+                                    <line
+                                        x1={x1}
+                                        y1={y1}
+                                        x2={x2}
+                                        y2={y2}
+                                        stroke={isActive ? '#FFB800' : 'rgba(255,255,255,0.18)'}
+                                        strokeWidth={isActive ? 2 : 1}
+                                    />
+                                    <text
+                                        x={tx}
+                                        y={ty}
+                                        fill={isActive ? '#fff' : 'rgba(255,255,255,0.35)'}
+                                        fontSize="9"
+                                        textAnchor="middle"
+                                        alignmentBaseline="middle"
+                                        fontFamily="monospace"
+                                        style={{ textShadow: isActive ? '0 0 10px white' : 'none' }}
+                                    >
+                                        {m.label}
+                                    </text>
+                                </g>
+                            );
+                        })}
+                    </g>
 
-                {/* The Solar Arc (Comet Tail) + Sun Marker */}
-                {!isNull && (
-                    <>
+                    {/* The Solar Arc (Comet Tail) + Sun Marker */}
+                    {!isNull && (
+                        <>
+                            <motion.circle
+                                cx={center} cy={center} r={yearRadius}
+                                stroke="url(#solarGradient)"
+                                strokeWidth="4"
+                                fill="none"
+                                strokeDasharray={yearCircumference}
+                                strokeDashoffset={yearDashOffset}
+                                strokeLinecap="round"
+                                style={{ transformOrigin: "center", transform: "rotate(-90deg)" }}
+                                // Add a subtle glow filter to the line itself
+                                filter="drop-shadow(0 0 4px rgba(0, 255, 157, 0.5))"
+                            />
+                            {/* THE SUN MARKER (The White Star) */}
+                            {(() => {
+                                // Calculate position manually to ensure correct orbital placement
+                                // User wants it flipped 180 degrees from original (Right) -> Left side.
+                                // solarArc 0 is naturally Right (3 o'clock). 
+                                // safeArc (from props) maps correctly to this SVG system (0=Top? No, 0=Right relative to -90 shift).
+                                // Actually, let's just use safeArc directly as verified by the DashOffset logic.
+                                const pos = polarToCartesian(center, center, yearRadius, safeArc);
+                                return (
+                                    <motion.circle
+                                        key={`sun-marker-${safeArc}`}
+                                        cx={pos.x}
+                                        cy={pos.y}
+                                        r="4"
+                                        fill="#FFB800"
+                                        filter="drop-shadow(0 0 8px #FFB800)"
+                                        initial={{ opacity: 0, scale: 0 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ type: "spring", stiffness: 50, damping: 20 }}
+                                    />
+                                );
+                            })()}
+                        </>
+                    )}
+
+                    {/* Null Interval Pulse Ring */}
+                    {isNull && (
                         <motion.circle
                             cx={center} cy={center} r={yearRadius}
-                            stroke="url(#solarGradient)"
-                            strokeWidth="4"
-                            fill="none"
-                            strokeDasharray={yearCircumference}
-                            strokeDashoffset={yearDashOffset}
-                            strokeLinecap="round"
-                            style={{ transformOrigin: "center", transform: "rotate(-90deg)" }}
-                            // Add a subtle glow filter to the line itself
-                            filter="drop-shadow(0 0 4px rgba(0, 255, 157, 0.5))"
+                            stroke="#ff3333" strokeWidth="4" fill="none"
+                            animate={{ opacity: [0.2, 1, 0.2], strokeWidth: [2, 6, 2] }}
+                            transition={{ duration: 1.5, repeat: Infinity }}
+                            filter="drop-shadow(0 0 8px rgba(255, 51, 51, 0.8))"
                         />
-                        {/* THE SUN MARKER (The White Star) */}
-                        {(() => {
-                            // Calculate position manually to ensure correct orbital placement
-                            // User wants it flipped 180 degrees from original (Right) -> Left side.
-                            // solarArc 0 is naturally Right (3 o'clock). 
-                            // safeArc (from props) maps correctly to this SVG system (0=Top? No, 0=Right relative to -90 shift).
-                            // Actually, let's just use safeArc directly as verified by the DashOffset logic.
-                            const pos = polarToCartesian(center, center, yearRadius, safeArc);
-                            return (
-                                <motion.circle
-                                    key={`sun-marker-${safeArc}`}
-                                    cx={pos.x}
-                                    cy={pos.y}
-                                    r="4"
-                                    fill="#ff0000"
-                                    filter="drop-shadow(0 0 8px #ff0000)"
-                                    initial={{ opacity: 0, scale: 0 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{ type: "spring", stiffness: 50, damping: 20 }}
-                                />
-                            );
-                        })()}
-                    </>
-                )}
-
-                {/* Null Interval Pulse Ring */}
-                {isNull && (
-                    <motion.circle
-                        cx={center} cy={center} r={yearRadius}
-                        stroke="#ff3333" strokeWidth="4" fill="none"
-                        animate={{ opacity: [0.2, 1, 0.2], strokeWidth: [2, 6, 2] }}
-                        transition={{ duration: 1.5, repeat: Infinity }}
-                        filter="drop-shadow(0 0 8px rgba(255, 51, 51, 0.8))"
-                    />
-                )}
+                    )}
+                </g>
 
                 {/* STATIC TICKS */}
                 <g>{ticks}</g>
 
-                {/* DAY RING (Rotating) */}
+                {/* --- GROUP 2: DAY (Rotating) --- */}
                 <motion.g
-                    style={{ originX: "50%", originY: "50%" }}
+                    style={{ originX: "50%", originY: "50%", opacity: getOpacity('DAY'), transition: 'opacity 0.4s ease-out' }}
                     animate={{ rotate: safeRotation }}
                     transition={{ type: "tween", ease: "linear", duration: 0 }}
                 >
                     <circle
                         cx={center} cy={center} r={dayRadius}
-                        stroke="rgba(255, 255, 255, 0.3)" strokeWidth="1" fill="none"
+                        stroke="rgba(0, 209, 255, 0.3)" strokeWidth="1" fill="none"
                         strokeDasharray="4 4"
                     />
                     {/* The "Sun" Indicator on the ring */}
@@ -279,20 +298,21 @@ export const Visualizer: FC<VisualizerProps> = ({ solarArc, rotation, lunarPhase
                     <line x1={center} y1={center} x2={center} y2={center - dayRadius} stroke="rgba(255, 255, 255, 0.3)" />
                 </motion.g>
 
-                {/* --- THE MOON --- */}
+                {/* --- GROUP 3: LUNAR (The Moon) --- */}
+                <g style={{ opacity: getOpacity('MOON'), transition: 'opacity 0.4s ease-out' }}>
+                    {/* 1. The Dark Side (Base) */}
+                    <circle cx={center} cy={center} r={moonRadius} fill="#1a1a1a" />
 
-                {/* 1. The Dark Side (Base) */}
-                <circle cx={center} cy={center} r={moonRadius} fill="#1a1a1a" />
+                    {/* 2. The Light Side (Masked) */}
+                    <circle
+                        cx={center} cy={center} r={moonRadius}
+                        fill="#E0E0E0"
+                        mask="url(#moonLightMask)"
+                    />
 
-                {/* 2. The Light Side (Masked) */}
-                <circle
-                    cx={center} cy={center} r={moonRadius}
-                    fill="#e0e0e0"
-                    mask="url(#moonLightMask)"
-                />
-
-                {/* 3. Inner shadow for depth (Crater effect) */}
-                <circle cx={center} cy={center} r={moonRadius} stroke="rgba(0,0,0,0.5)" strokeWidth="2" fill="none" />
+                    {/* 3. Inner shadow for depth (Crater effect) */}
+                    <circle cx={center} cy={center} r={moonRadius} stroke="rgba(0,0,0,0.5)" strokeWidth="2" fill="none" />
+                </g>
 
                 {/* LUNAR PHASE HINT (New/Quarter/Full) */}
                 {moonPhaseHint && (
@@ -301,12 +321,12 @@ export const Visualizer: FC<VisualizerProps> = ({ solarArc, rotation, lunarPhase
                         <text
                             x={center}
                             y={center + moonRadius + 20}
-                            fill="#00ff9d"
+                            fill="#00D1FF"
                             fontSize="10"
                             textAnchor="middle"
                             alignmentBaseline="middle"
                             fontFamily="monospace"
-                            style={{ textShadow: '0 0 10px rgba(0, 255, 157, 0.35)' }}
+                            style={{ textShadow: '0 0 10px rgba(0, 209, 255, 0.35)' }}
                         >
                             {moonPhaseHint.label}
                         </text>
