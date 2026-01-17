@@ -13,8 +13,11 @@ export function useLunar() {
             // illumination.phase goes from 0.0 (New) -> 0.25 (1st Q) -> 0.5 (Full) -> 0.75 (Last Q) -> 1.0 (New)
             // We map this to 0-29 scale.
 
-            let phaseIndex = Math.round(illumination.phase * 29);
-            if (phaseIndex > 29) phaseIndex = 0; // Wrap around if needed
+            // [FIX] Use 30-phase system (0-29) based on Hawaiian moon phase tradition
+            // Math.floor(0.0 to 0.999 * 30) gives 0-29.
+            // Edge case: phase 1.0 would give 30, so we wrap it.
+            let phaseIndex = Math.floor(illumination.phase * 30);
+            if (phaseIndex >= 30) phaseIndex = 0;
 
             setLunarPhase(phaseIndex.toString().padStart(2, '0'));
         };

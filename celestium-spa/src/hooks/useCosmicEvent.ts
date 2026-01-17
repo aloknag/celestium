@@ -1,158 +1,133 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import * as Astronomy from 'astronomy-engine';
 import { DateTime } from 'luxon';
 
-export interface CosmicEvent {
-    type: 'ECLIPSE' | 'LUNAR' | 'PLANETARY';
-    badge: 'SOLAR' | 'LUNAR' | 'PLANET' | 'SUPERMOON' | 'MICROMOON';
+interface CosmicEvent {
     name: string;
+    type: 'ECLIPSE' | 'OPPOSITION' | 'SUPERMOON' | 'MICROMOON' | 'None';
     date: Date;
-    timeUntil: string;
     formattedDate: string;
+    timeUntil: string;
+    badge: string;
 }
 
-export function useCosmicEvent(lat: number | null, lon: number | null) {
+export function useCosmicEvent(lat: number | null, lon: number | null): CosmicEvent | null {
     const [event, setEvent] = useState<CosmicEvent | null>(null);
 
     useEffect(() => {
         const calculate = () => {
             const now = new Date();
-            const candidates: CosmicEvent[] = [];
-            const observer = (lat !== null && lon !== null) ? new Astronomy.Observer(lat, lon, 0) : null;
+            let bestEvent: CosmicEvent | null = null;
+            let minTimeDiff = Infinity;
 
-            // --- 1. INTELLIGENT ECLIPSE SCANNER ---
-            // Look into the future for a VISIBLE eclipse.
-            // We limit to 5 look-aheads to prevent performance hanging.
+            // --- 0. GLOBAL EVENTS (Fallback: Solstices & Equinoxes) ---
+            // These run regardless of geolocation
+            const currentYear = now.getFullYear();
+            const seasons = [
+                Astronomy.Seasons(currentYear),
+                Astronomy.Seasons(currentYear + 1)
+            ];
 
-            // A. SOLAR SEARCH
-            let searchDate = new Date(now.getTime());
-            let foundSolar = false;
-            let attempts = 0;
+            const seasonNames: Record<string, string> = {
+                mar_equinox: 'VERNAL EQUINOX',
+                jun_solstice: 'SUMMER SOLSTICE',
+                sep_equinox: 'AUTUMNAL EQUINOX',
+                dec_solstice: 'WINTER SOLSTICE'
+            };
 
-            while (!foundSolar && attempts < 5) {
-                const globalSolar = Astronomy.SearchGlobalSolarEclipse(searchDate);
-                const peak = globalSolar.peak.date;
+            for (const yearSeasons of seasons) {
+                for (const [key, astroTime] of Object.entries(yearSeasons)) {
+                    // Astronomy-Engine returns 'AstroTime' objects, need .date
+                    const evtDate = astroTime.date;
+                    const diff = evtDate.getTime() - now.getTime();
 
-                let isVisible = false;
-                if (observer) {
-                    // Check local visibility
-                    // SearchLocalSolarEclipse looks for an event strictly near the given time
-                    const searchStart = new Date(peak.getTime() - 86400000);
-                    const localSolar = Astronomy.SearchLocalSolarEclipse(searchStart, observer);
-
-                    // Verify it is the same event (approx same time)
-                    if (localSolar && Math.abs(localSolar.peak.time.date.getTime() - peak.getTime()) < 86400000) {
-                        isVisible = true;
+                    // If event is in future and closer than current best
+                    if (diff > 0 && diff < minTimeDiff) {
+                        minTimeDiff = diff;
+                        bestEvent = {
+                            name: seasonNames[key] || 'EQUINOX/SOLSTICE',
+                            type: 'None', // Generic type
+                            date: evtDate,
+                            formattedDate: DateTime.fromJSDate(evtDate).toFormat('MMM dd, yyyy HH:mm'),
+                            timeUntil: '', // Calculated at end
+                            badge: 'SOLAR'
+                        };
                     }
-                } else {
-                    isVisible = true; // No geo? Assume global relevance.
-                }
-
-                if (isVisible) {
-                    const kind = String(globalSolar.kind).replace('_', ' ').toUpperCase();
-                    candidates.push(createEvent('ECLIPSE', 'SOLAR', `SOLAR ${kind}`, peak));
-                    foundSolar = true;
-                } else {
-                    // Skip and look forward 10 days
-                    searchDate = new Date(peak.getTime() + (10 * 86400000));
-                    attempts++;
                 }
             }
 
-            // B. LUNAR SEARCH
-            searchDate = new Date(now.getTime()); // Reset date
-            let foundLunar = false;
-            attempts = 0;
+            // --- 1. LOCAL EVENTS (High Priority: Eclipses) ---
+            // Only runs if we have location
+            if (lat !== null && lon !== null) {
+                const observer = new Astronomy.Observer(lat, lon, 0);
+                const solarEclipse = Astronomy.SearchLocalSolarEclipse(now, observer);
 
-            while (!foundLunar && attempts < 5) {
-                const globalLunar = Astronomy.SearchLunarEclipse(searchDate);
-                const peak = globalLunar.peak.date;
+                if (solarEclipse) {
+                    const evtDate = solarEclipse.peak.time.date;
+                    const diff = evtDate.getTime() - now.getTime();
 
-                let isVisible = false;
-                if (observer) {
-                    // Check altitude > -0.5 deg (horizon dip)
-                    const moonPos = Astronomy.Equator(Astronomy.Body.Moon, peak, observer, true, true);
-                    const horizon = Astronomy.Horizon(peak, observer, moonPos.ra, moonPos.dec, 'normal');
-                    if (horizon.altitude > -0.5) isVisible = true;
-                } else {
-                    isVisible = true;
-                }
-
-                if (isVisible) {
-                    const isTotal = globalLunar.kind === Astronomy.EclipseKind.Total;
-                    const name = isTotal ? "BLOOD MOON" : `LUNAR ${String(globalLunar.kind).toUpperCase()}`;
-                    candidates.push(createEvent('ECLIPSE', 'LUNAR', name, peak));
-                    foundLunar = true;
-                } else {
-                    searchDate = new Date(peak.getTime() + (10 * 86400000));
-                    attempts++;
+                    // Prioritize Eclipse if it is sooner than the Season
+                    // Or maybe we ALWAYS want to show Eclipse if it's within a reasonable window?
+                    // For now, strict time sorting (Next Visible Event)
+                    if (diff > 0 && diff < minTimeDiff) {
+                        minTimeDiff = diff;
+                        bestEvent = {
+                            name: solarEclipse.kind === 'total' ? 'TOTAL SOLAR ECLIPSE' : 'PARTIAL SOLAR ECLIPSE',
+                            type: 'ECLIPSE',
+                            date: evtDate,
+                            formattedDate: DateTime.fromJSDate(evtDate).toFormat('MMM dd, yyyy HH:mm'),
+                            timeUntil: '',
+                            badge: 'SOLAR'
+                        };
+                    }
                 }
             }
 
-            // --- 2. MOON PHASE SCANNER (Supermoons) ---
-            // Scan next 6 Full Moons (approx 6 months)
-            let moonSearch = new Date(now.getTime());
-            for (let i = 0; i < 6; i++) {
-                const fullMoon = Astronomy.SearchMoonPhase(180, moonSearch, 40);
-                if (!fullMoon) break;
+            // --- 2. LUNAR EVENTS (Supermoon/Micromoon) ---
+            // Geocentric - works globally
+            const moonVec = Astronomy.GeoVector(Astronomy.Body.Moon, now, true);
+            const distAU = Math.sqrt(moonVec.x ** 2 + moonVec.y ** 2 + moonVec.z ** 2);
+            const distKm = distAU * 149597870.7;
 
-                // Distance Check
-                const moonVec = Astronomy.GeoVector(Astronomy.Body.Moon, fullMoon.date, true);
-                const distKm = Math.sqrt(moonVec.x ** 2 + moonVec.y ** 2 + moonVec.z ** 2) * 149597870.7;
-
-                if (distKm < 360000) {
-                    candidates.push(createEvent('LUNAR', 'SUPERMOON', 'SUPERMOON', fullMoon.date));
-                } else if (distKm > 405000) {
-                    candidates.push(createEvent('LUNAR', 'MICROMOON', 'MICROMOON', fullMoon.date));
-                }
-
-                moonSearch = new Date(fullMoon.date.getTime() + (10 * 86400000));
+            // Check for ACTIVE status (happening right now)
+            // This overrides everything else because diff = 0
+            if (distKm < 360000) {
+                minTimeDiff = 0;
+                bestEvent = {
+                    name: 'PERIGEE SYZYGY (SUPERMOON)',
+                    type: 'SUPERMOON',
+                    date: now,
+                    formattedDate: 'CURRENTLY VISIBLE',
+                    timeUntil: 'NOW',
+                    badge: 'SUPERMOON'
+                };
+            } else if (distKm > 405000) {
+                minTimeDiff = 0;
+                bestEvent = {
+                    name: 'APOGEE SYZYGY (MICROMOON)',
+                    type: 'MICROMOON',
+                    date: now,
+                    formattedDate: 'CURRENTLY VISIBLE',
+                    timeUntil: 'NOW',
+                    badge: 'MICROMOON'
+                };
             }
 
-            // --- 3. PLANETARY SCANNER ---
-            ['Jupiter', 'Saturn', 'Mars'].forEach(planetName => {
-                // Search for Opposition (0 deg relative long) in next 365 days
-                let body: Astronomy.Body;
-                switch (planetName) {
-                    case 'Jupiter': body = Astronomy.Body.Jupiter; break;
-                    case 'Saturn': body = Astronomy.Body.Saturn; break;
-                    case 'Mars': body = Astronomy.Body.Mars; break;
-                    default: return;
-                }
-
-                const opp = Astronomy.SearchRelativeLongitude(body, 0, now);
-                if (opp) {
-                    candidates.push(createEvent('PLANETARY', 'PLANET', `${planetName.toUpperCase()} OPPOSITION`, opp.date));
-                }
-            });
-
-            // --- 4. SORT & SELECT ---
-            if (candidates.length > 0) {
-                candidates.sort((a, b) => a.date.getTime() - b.date.getTime());
-                setEvent(candidates[0]); // Return the closest one
+            // Finalize Time String
+            if (bestEvent && bestEvent.timeUntil !== 'NOW') {
+                const diffSeconds = Math.floor((bestEvent.date.getTime() - now.getTime()) / 1000);
+                const days = Math.floor(diffSeconds / 86400);
+                bestEvent.timeUntil = `${days} DAYS`;
             }
+
+            setEvent(bestEvent);
         };
 
-        calculate();
-        const interval = setInterval(calculate, 3600000); // Hourly refresh
-        return () => clearInterval(interval);
+        // [OPTIMIZATION] Defer heavy calculation to next tick to avoid blocking UI
+        const timer = setTimeout(calculate, 0);
 
+        return () => clearTimeout(timer);
     }, [lat, lon]);
 
     return event;
-}
-
-function createEvent(type: 'ECLIPSE' | 'LUNAR' | 'PLANETARY', badge: 'SOLAR' | 'LUNAR' | 'PLANET' | 'SUPERMOON' | 'MICROMOON', name: string, date: Date): CosmicEvent {
-    const dtTarget = DateTime.fromJSDate(date);
-    const dtNow = DateTime.now();
-    const diff = dtTarget.diff(dtNow, ['days', 'hours']);
-
-    return {
-        type,
-        badge,
-        name,
-        date,
-        timeUntil: `${Math.floor(diff.days)}d ${Math.floor(diff.hours)}h`,
-        formattedDate: dtTarget.toFormat("yyyy.MM.dd")
-    };
 }

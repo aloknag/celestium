@@ -1,5 +1,13 @@
 # Copilot instructions (Celestium SPA)
 
+## Instructions while working on Celestium SPA
+  - If you are implementing new features do following:
+     - Create a new branch from `main` for each feature/fix.
+     - Implement the feature/fix according to the project conventions.
+     - Run the linting and typechecking commands to ensure code quality.
+     - Execute tests using the Playwright MCP to verify functionality.
+     - **DO NOT** start the server using npm run dev. Let the user start the server and provide the URL if needed.
+
 ## Where the app lives
 - Main project is in `celestium-spa/` (Vite + React + TypeScript + Tailwind).
 - Most work happens under `celestium-spa/src/`.

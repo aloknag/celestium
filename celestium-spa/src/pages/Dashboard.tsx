@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
+import { useCallback } from 'react';
 
 import { SlotCounter } from '../components/common/SlotCounter';
 import { RightPanel } from '../components/HUD/RightPanel';
@@ -24,14 +25,18 @@ export function Dashboard() {
 
   const { focusedSector, setFocusedSector } = useStore();
 
-  const interact = (sector: CosmicSector) => ({
+  const getInteractionProps = useCallback((sector: CosmicSector) => {
+    const isFocused = focusedSector === sector;
+    const isBlurred = focusedSector && !isFocused;
+
+    return {
       onMouseEnter: () => setFocusedSector(sector),
       onMouseLeave: () => setFocusedSector(null),
-      onClick: () => setFocusedSector(focusedSector === sector ? null : sector),
-      className: `cursor-help transition-all duration-300 px-1 py-1 rounded hover:bg-white/5 ${
-          focusedSector && focusedSector !== sector ? 'opacity-30 blur-[1px]' : 'opacity-100'
-      } ${focusedSector === sector ? 'scale-110' : ''}`
-  });
+      onClick: () => setFocusedSector(isFocused ? null : sector),
+      className: `cursor-help transition-all duration-300 px-1 py-1 rounded hover:bg-white/5 ${isBlurred ? 'opacity-30 blur-[1px]' : 'opacity-100'
+        } ${isFocused ? 'scale-110' : ''}`
+    };
+  }, [focusedSector, setFocusedSector]);
 
   const starSystem = useConstellation(solar.arc);
   const lp = parseInt(lunarPhase, 10);
@@ -58,28 +63,50 @@ export function Dashboard() {
 
         {/* GOD STRING */}
         <div className={`text-sm sm:text-lg md:text-3xl lg:text-4xl tracking-widest font-bold text-center transition-colors duration-500 flex flex-wrap items-center justify-center gap-2 sm:gap-2 md:gap-4 ${solar.isNull ? 'text-celestium-null' : ''}`}>
-          <div {...interact('AEON')} className={`flex items-center gap-2 text-celestium-dim ${interact('AEON').className}`}>
-            <span>{aeon}</span>
-            <span className="text-white/20">::</span>
-            <span>{epoch}</span>
-            <span className="text-white/20">.</span>
-          </div>
-          <div {...interact('ARC')} className={`flex items-center text-celestium-gold glow-text-gold ${interact('ARC').className}`}>
-             {solar.isNull ? (
-                <span className="text-celestium-null animate-pulse">NULL</span>
-              ) : (
-                <SlotCounter value={Math.floor(parseFloat(solar.arc || '0')).toString().padStart(3, '0')} />
-              )}
-          </div>
+
+          {(() => {
+            const p = getInteractionProps('AEON'); return (
+              <div {...p} className={`flex items-center gap-2 text-celestium-dim ${p.className}`}>
+                <span>{aeon}</span>
+                <span className="text-white/20">::</span>
+                <span>{epoch}</span>
+                <span className="text-white/20">.</span>
+              </div>
+            );
+          })()}
+
+          {(() => {
+            const p = getInteractionProps('ARC'); return (
+              <div {...p} className={`flex items-center text-celestium-gold glow-solar ${p.className}`}>
+                {solar.isNull ? (
+                  <span className="text-celestium-null animate-pulse">NULL</span>
+                ) : (
+                  <SlotCounter value={Math.floor(parseFloat(solar.arc || '0')).toString().padStart(3, '0')} />
+                )}
+              </div>
+            );
+          })()}
+
           <span className="text-white/20">.</span>
-          <div {...interact('PHASE')} className={`text-celestium-cyan glow-text-cyan ${interact('PHASE').className}`}>
-             <SlotCounter value={lunarPhase.toString()} />
-          </div>
+
+          {(() => {
+            const p = getInteractionProps('PHASE'); return (
+              <div {...p} className={`text-celestium-cyan glow-observer ${p.className}`}>
+                <SlotCounter value={lunarPhase.toString()} />
+              </div>
+            );
+          })()}
+
           <span className="text-white/20">|</span>
-          <div {...interact('ROTATION')} className={`flex items-center text-celestium-cyan glow-text-cyan ${interact('ROTATION').className}`}>
-             <SlotCounter value={rotation} />
-             <span className="text-celestium-dim ml-1">°</span>
-          </div>
+
+          {(() => {
+            const p = getInteractionProps('ROTATION'); return (
+              <div {...p} className={`flex items-center text-celestium-cyan glow-observer ${p.className}`}>
+                <SlotCounter value={rotation} />
+                <span className="text-celestium-dim ml-1">°</span>
+              </div>
+            );
+          })()}
         </div>
 
         {/* NULL COUNTDOWN */}
@@ -95,13 +122,13 @@ export function Dashboard() {
           - min-h-0: Allow shrinking below content size (prevents blowout).
           - py-4: Small padding to prevent edge touching.
       */}
-      <motion.div 
+      <motion.div
         className="w-full max-w-7xl shrink-0 md:flex-1 md:min-h-0 flex flex-col md:flex-row items-center justify-center gap-6 md:gap-8 px-4 py-4 md:py-0 relative"
         initial={{ opacity: 0, scale: 0.95, filter: "blur(10px)" }}
-        animate={mode === 'TRUE_SOLAR' ? { 
-            opacity: 1, scale: 0.95, filter: "blur(0px)", rotateX: 8, y: 20
-        } : { 
-            opacity: 1, scale: 1, filter: "blur(0px)", rotateX: 0, y: 0 
+        animate={mode === 'TRUE_SOLAR' ? {
+          opacity: 1, scale: 0.95, filter: "blur(0px)", rotateX: 8, y: 20
+        } : {
+          opacity: 1, scale: 1, filter: "blur(0px)", rotateX: 0, y: 0
         }}
         transition={{ duration: 1.2, ease: "circOut" }}
         style={{ perspective: "1000px", transformStyle: "preserve-3d" }}
@@ -127,7 +154,7 @@ export function Dashboard() {
         <main className="relative w-full max-w-[340px] md:max-w-none md:w-auto md:h-full md:max-h-full aspect-square flex items-center justify-center order-1 md:order-2">
           {/* Background Grid Lines */}
           <div className="absolute inset-0 border-[0.5px] border-celestium-dim opacity-10 pointer-events-none rounded-full scale-110" />
-          
+
           <Visualizer
             solarArc={parseFloat(solar.arc || '0')}
             rotation={parseFloat(rotation)}

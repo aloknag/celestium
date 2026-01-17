@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import type { FC } from 'react';
+import { useCallback } from 'react'; // [FIX] Import useCallback
 import { CONSTELLATIONS } from '../../hooks/useConstellation';
 // [NEW] Import Store
 import { useStore } from '../../store/store';
@@ -16,14 +17,14 @@ export const Visualizer: FC<VisualizerProps> = ({ solarArc, rotation, lunarPhase
     const { focusedSector } = useStore();
 
     // [NEW] Helper for Opacity Logic
-    const getOpacity = (group: 'RING' | 'MOON' | 'DAY') => {
+    const getOpacity = useCallback((group: 'RING' | 'MOON' | 'DAY') => {
         if (!focusedSector) return 1;
         switch (group) {
             case 'RING': return (focusedSector === 'ARC' || focusedSector === 'AEON') ? 1 : 0.4;
             case 'MOON': return focusedSector === 'PHASE' ? 1 : 0.4;
             case 'DAY': return focusedSector === 'ROTATION' ? 1 : 0.4;
         }
-    };
+    }, [focusedSector]);
 
     // Conversions for SVG
     const size = 600;
