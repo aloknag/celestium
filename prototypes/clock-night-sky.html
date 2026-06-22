@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Celestium — Night Sky Clock (concept)</title>
+<style>
+  /* ─── Celestium concept prototype ────────────────────────────────
+     A "close to nature" reimagining: the real night sky as the clock.
+     Self-contained. No build step, no dependencies. Open in a browser.
+     Positions are astronomically *approximate* — this is a feel study. */
+
+  :root {
+    --ink:        #0a0e1a;   /* deep indigo-black, top of sky      */
+    --ink-2:      #131a30;   /* mid sky                            */
+    --horizon:    #2a2233;   /* warm-shadowed horizon band         */
+    --star:       #eaf0ff;   /* starlight                          */
+    --moon:       #e8ecf5;   /* moonlight silver                   */
+    --sun:        #ffce8a;   /* warm amber sun                     */
+    --sun-deep:   #ff9d57;
+    --text:       #dfe6f5;   /* soft readable text                 */
+    --text-dim:   #8b93ad;   /* quiet labels                       */
+    --line:       rgba(190,205,255,0.16);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    background: var(--ink);
+    color: var(--text);
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* Numbers want a calm monospace so digits don't jitter */
+  .mono {
+    font-family: "SFMono-Regular", "JetBrains Mono", "Menlo", "Consolas", monospace;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
+
+  #sky {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    display: block;
+  }
+
+  /* Warm horizon glow, layered above the canvas */
+  .horizon-glow {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    height: 38vh;
+    z-index: 1;
+    pointer-events: none;
+    background: radial-gradient(120% 100% at 70% 120%,
+                rgba(255,157,87,0.20) 0%,
+                rgba(255,157,87,0.07) 32%,
+                rgba(255,157,87,0.0) 60%);
+  }
+
+  .stage {
+    position: relative;
+    z-index: 3;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 28px 20px 40px;
+  }
+
+  /* ── Wordmark ───────────────────────────────── */
+  .wordmark {
+    font-family: "SFMono-Regular", "JetBrains Mono", Menlo, monospace;
+    font-size: 12px;
+    letter-spacing: 0.55em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    text-indent: 0.55em;
+    margin-bottom: 4px;
+  }
+  .tagline {
+    font-style: italic;
+    font-size: 13px;
+    color: var(--text-dim);
+    opacity: 0.8;
+    margin-bottom: 26px;
+  }
+
+  /* ── The celestial sentence (Sun & Moon in their constellations) ── */
+  .sky-read {
+    text-align: center;
+    line-height: 1.7;
+    font-size: clamp(15px, 2.2vw, 19px);
+    color: var(--text);
+    max-width: 640px;
+    margin-bottom: 30px;
+  }
+  .sky-read .body { color: var(--text-dim); }
+  .sky-read .sun  { color: var(--sun);  font-style: italic; }
+  .sky-read .moon { color: var(--moon); font-style: italic; }
+  .sky-read .where { color: var(--text); }
+
+  /* ── The clock card ───────────────────────────── */
+  .clock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+    padding: 30px 28px;
+    border-radius: 18px;
+    background: rgba(16,21,38,0.42);
+    border: 1px solid var(--line);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.45);
+    max-width: 520px;
+    width: 100%;
+  }
+
+  .readout { text-align: center; }
+  .local-time {
+    font-size: clamp(40px, 11vw, 68px);
+    font-weight: 400;
+    color: var(--text);
+    text-shadow: 0 0 24px rgba(190,205,255,0.18);
+  }
+  .ampm { font-size: 0.42em; color: var(--text-dim); margin-left: 0.25em; }
+
+  .equate {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 8px;
+    color: var(--text-dim);
+  }
+  .equate .eq { font-size: 22px; opacity: 0.5; }
+  .rho {
+    font-size: clamp(20px, 5vw, 28px);
+    color: var(--sun);
+    text-shadow: 0 0 18px rgba(255,206,138,0.25);
+  }
+  .rho .sym { color: var(--text-dim); font-style: italic; margin-right: 0.35em; }
+  .rho .deg { color: var(--text-dim); }
+
+  .gloss {
+    margin-top: 14px;
+    font-style: italic;
+    font-size: 15px;
+    color: var(--text-dim);
+    min-height: 1.4em;
+  }
+
+  /* ── The sun dial ─────────────────────────────── */
+  .dial-wrap { width: min(300px, 78vw); }
+  svg.dial { width: 100%; height: auto; display: block; }
+
+  /* ── Mode toggle ──────────────────────────────── */
+  .mode {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: "SFMono-Regular", Menlo, monospace;
+    letter-spacing: 0.08em;
+  }
+  .mode button {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 7px 16px;
+    cursor: pointer;
+    font: inherit;
+    letter-spacing: 0.12em;
+    transition: all 0.3s ease;
+  }
+  .mode button.active {
+    color: var(--sun);
+    border-color: rgba(255,206,138,0.5);
+    box-shadow: 0 0 16px rgba(255,206,138,0.15);
+  }
+  .mode-note {
+    font-family: inherit;
+    font-style: italic;
+    font-size: 12.5px;
+    color: var(--text-dim);
+    opacity: 0.8;
+    text-align: center;
+    max-width: 420px;
+    margin-top: 10px;
+    min-height: 1.3em;
+  }
+
+  /* ── Great Year (precession) strip ────────────── */
+  .deeptime {
+    margin-top: 46px;
+    width: 100%;
+    max-width: 620px;
+    text-align: center;
+  }
+  .deeptime h2 {
+    font-family: "SFMono-Regular", Menlo, monospace;
+    font-size: 11px;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+    text-indent: 0.4em;
+  }
+  .precess-track {
+    position: relative;
+    height: 2px;
+    background: var(--line);
+    border-radius: 2px;
+    margin: 30px 8px 12px;
+  }
+  .precess-track .tick {
+    position: absolute;
+    top: -5px;
+    width: 1px;
+    height: 12px;
+    background: rgba(190,205,255,0.3);
+    transform: translateX(-50%);
+  }
+  .precess-track .tick span {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: "SFMono-Regular", Menlo, monospace;
+    font-size: 9.5px;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .precess-track .now {
+    position: absolute;
+    top: -7px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--moon);
+    box-shadow: 0 0 16px rgba(232,236,245,0.6);
+    transform: translate(-50%, 0);
+  }
+  .precess-track .now::after {
+    content: "Polaris · now";
+    position: absolute;
+    bottom: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: "SFMono-Regular", Menlo, monospace;
+    font-size: 10px;
+    color: var(--moon);
+    white-space: nowrap;
+  }
+  .deeptime p {
+    font-style: italic;
+    font-size: 14px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin-top: 26px;
+  }
+  .deeptime .reveal { color: var(--sun); }
+
+  .foot {
+    margin-top: 40px;
+    font-family: "SFMono-Regular", Menlo, monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    color: var(--text-dim);
+    opacity: 0.45;
+    text-align: center;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; }
+  }
+</style>
+</head>
+<body>
+  <canvas id="sky"></canvas>
+  <div class="horizon-glow"></div>
+
+  <div class="stage">
+    <div class="wordmark">Celestium</div>
+    <div class="tagline">We do not watch the clock. We watch the sky.</div>
+
+    <!-- The sky, said as a sentence -->
+    <div class="sky-read">
+      <span class="body">Tonight the </span><span class="sun">Sun rests in <b id="sunConst">—</b></span><span class="body">,</span><br />
+      <span class="body">the </span><span class="moon"><b id="moonPhaseWord">—</b> Moon rides through <b id="moonConst">—</b></span><span class="body">,</span><br />
+      <span class="body">and you have turned </span><span class="where"><b id="whereDeg" class="mono">—</b> into your day.</span>
+    </div>
+
+    <!-- Clock card -->
+    <div class="clock">
+      <div class="readout">
+        <div class="local-time mono"><span id="ltime">--:--:--</span><span class="ampm" id="ampm">--</span></div>
+        <div class="equate">
+          <span class="eq">=</span>
+          <span class="rho mono"><span class="sym">ρ</span><span id="rho">000.00</span><span class="deg">°</span></span>
+        </div>
+        <div class="gloss" id="gloss">&nbsp;</div>
+      </div>
+
+      <!-- 24-hour sun dial: one full turn = one day = 360° -->
+      <div class="dial-wrap">
+        <svg class="dial" viewBox="0 0 300 300" aria-label="24-hour sun dial">
+          <defs>
+            <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+              <stop offset="0%"  stop-color="#ffce8a" stop-opacity="1"/>
+              <stop offset="100%" stop-color="#ffce8a" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <!-- faint outer ring -->
+          <circle cx="150" cy="150" r="120" fill="none" stroke="rgba(190,205,255,0.14)" stroke-width="1"/>
+          <!-- ticks + cardinal labels injected by JS -->
+          <g id="ticks"></g>
+          <!-- the sun hand -->
+          <g id="hand" style="transform-origin:150px 150px;">
+            <line x1="150" y1="150" x2="150" y2="42" stroke="rgba(255,206,138,0.55)" stroke-width="1.5"/>
+            <circle cx="150" cy="42" r="16" fill="url(#sunGlow)"/>
+            <circle cx="150" cy="42" r="5"  fill="#ffce8a"/>
+          </g>
+          <!-- earth at center -->
+          <circle cx="150" cy="150" r="6" fill="#6f8bd6"/>
+          <circle cx="150" cy="150" r="6" fill="none" stroke="rgba(190,205,255,0.4)" stroke-width="0.5"/>
+        </svg>
+      </div>
+
+      <!-- Mode toggle -->
+      <div class="mode">
+        <button id="mStd" class="active">ISO · CLOCK TIME</button>
+        <button id="mSol">TRUE SOLAR</button>
+      </div>
+      <div class="mode-note" id="modeNote">The time your phone shows — agreed by committee, shared across a whole time zone.</div>
+    </div>
+
+    <!-- Great Year / precession -->
+    <div class="deeptime">
+      <h2>The Great Year</h2>
+      <div class="precess-track">
+        <div class="tick" style="left:8%"><span>Thuban<br>~3000 BC</span></div>
+        <div class="now" style="left:50%"></div>
+        <div class="tick" style="left:92%"><span>Vega<br>~13700 AD</span></div>
+      </div>
+      <p>
+        Earth wobbles like a slow top — one full circle every ~25,772 years.<br>
+        <span class="reveal">The spring equinox has drifted out of Aries into Pisces since the zodiac was named —
+        so your "star sign" is off by nearly a whole constellation.</span><br>
+        Drag a finger across millennia (soon) and watch the pole star change.
+      </p>
+    </div>
+
+    <div class="foot">Concept prototype · positions approximate · feel study, not final art</div>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ── IAU constellation the SUN actually sits in, by date ──────────
+     (real sky boundaries — already "off" from astrology signs) */
+  const SUN_IN = [
+    { c: "Sagittarius", from: [12,17] }, { c: "Capricornus", from: [1,20] },
+    { c: "Aquarius",    from: [2,16] },  { c: "Pisces",      from: [3,11] },
+    { c: "Aries",       from: [4,18] },  { c: "Taurus",      from: [5,13] },
+    { c: "Gemini",      from: [6,21] },  { c: "Cancer",      from: [7,20] },
+    { c: "Leo",         from: [8,10] },  { c: "Virgo",       from: [9,16] },
+    { c: "Libra",       from: [10,30] }, { c: "Scorpius",    from: [11,23] },
+    { c: "Ophiuchus",   from: [11,29] }, { c: "Sagittarius", from: [12,17] },
+  ];
+  function sunConstellation(d) {
+    const m = d.getMonth() + 1, day = d.getDate();
+    const v = m * 100 + day;
+    let best = "Sagittarius";
+    for (const s of SUN_IN) {
+      if (v >= s.from[0] * 100 + s.from[1]) best = s.c;
+    }
+    // wrap: Jan before the 20th is still Sagittarius
+    if (v < 120) best = "Sagittarius";
+    return best;
+  }
+
+  /* ── Ecliptic-longitude boundaries (for the MOON's constellation) ── */
+  const ECL = [
+    { c: "Pisces", s: 351 }, { c: "Aries", s: 29 }, { c: "Taurus", s: 54 },
+    { c: "Gemini", s: 90 }, { c: "Cancer", s: 118 }, { c: "Leo", s: 138 },
+    { c: "Virgo", s: 174 }, { c: "Libra", s: 218 }, { c: "Scorpius", s: 241 },
+    { c: "Ophiuchus", s: 248 }, { c: "Sagittarius", s: 266 },
+    { c: "Capricornus", s: 299 }, { c: "Aquarius", s: 327 },
+  ];
+  function eclConstellation(lon) {
+    lon = ((lon % 360) + 360) % 360;
+    if (lon >= 351 || lon < 29) return "Pisces";
+    let best = "Pisces";
+    for (const e of ECL) { if (e.s <= lon) best = e.c; }
+    return best;
+  }
+
+  /* ── Moon phase + rough ecliptic longitude (synodic approximation) ── */
+  const KNOWN_NEW_MOON = Date.UTC(2000, 0, 6, 18, 14) / 86400000; // days
+  const SYNODIC = 29.530588853;
+  function moonInfo(d) {
+    const days = d.getTime() / 86400000;
+    const age = ((days - KNOWN_NEW_MOON) % SYNODIC + SYNODIC) % SYNODIC;
+    const frac = age / SYNODIC;                     // 0=new .. 0.5=full
+    // Sun's ecliptic longitude (rough): days since vernal equinox * 360/365.24
+    const yearStart = Date.UTC(d.getUTCFullYear(), 2, 20) / 86400000;
+    let sunLon = ((days - yearStart) * (360 / 365.2422)) % 360;
+    if (sunLon < 0) sunLon += 360;
+    const moonLon = sunLon + frac * 360;            // moon leads sun by phase angle
+    let word = "New";
+    if (frac < 0.03 || frac > 0.97) word = "New";
+    else if (frac < 0.22) word = "Waxing crescent";
+    else if (frac < 0.28) word = "First-quarter";
+    else if (frac < 0.47) word = "Waxing gibbous";
+    else if (frac < 0.53) word = "Full";
+    else if (frac < 0.72) word = "Waning gibbous";
+    else if (frac < 0.78) word = "Last-quarter";
+    else word = "Waning crescent";
+    return { frac, word, constellation: eclConstellation(moonLon) };
+  }
+
+  /* ── Rotation ρ from local clock (fraction of day → degrees) ──────── */
+  function rho(d) {
+    const secs = d.getHours() * 3600 + d.getMinutes() * 60 + d.getSeconds() + d.getMilliseconds() / 1000;
+    return (secs / 86400) * 360;   // 0°=midnight, 90°=06h, 180°=noon, 270°=18h
+  }
+
+  function gloss(r) {
+    if (r < 90)  return "deep night — past midnight, climbing toward dawn";
+    if (r < 180) return "morning — the sun is rising toward its peak";
+    if (r < 270) return "afternoon — past noon, drifting toward sunset";
+    return "evening — the sun has set, turning back toward midnight";
+  }
+
+  /* ── Build dial ticks + cardinal labels ───────────────────────────
+     Map ρ → screen so Noon is at top, Sunrise right, Midnight bottom,
+     Sunset left (matches the real sky: sun rises east/right). */
+  const ticksG = document.getElementById("ticks");
+  function pos(r, radius) {
+    // hand rotation = 180 - ρ (clockwise from top); convert to xy
+    const theta = (180 - r) * Math.PI / 180;
+    return { x: 150 + radius * Math.sin(theta), y: 150 - radius * Math.cos(theta) };
+  }
+  // 24 ticks every 15°
+  for (let i = 0; i < 24; i++) {
+    const r = i * 15;
+    const cardinal = (r % 90 === 0);
+    const a = pos(r, 120), b = pos(r, cardinal ? 106 : 113);
+    const ln = document.createElementNS("http://www.w3.org/2000/svg", "line");
+    ln.setAttribute("x1", a.x); ln.setAttribute("y1", a.y);
+    ln.setAttribute("x2", b.x); ln.setAttribute("y2", b.y);
+    ln.setAttribute("stroke", cardinal ? "rgba(255,206,138,0.55)" : "rgba(190,205,255,0.22)");
+    ln.setAttribute("stroke-width", cardinal ? "2" : "1");
+    ticksG.appendChild(ln);
+  }
+  const CARD = [
+    { r: 180, t: "NOON" }, { r: 90, t: "SUNRISE" },
+    { r: 0,   t: "MIDNIGHT" }, { r: 270, t: "SUNSET" },
+  ];
+  CARD.forEach(function (c) {
+    const p = pos(c.r, 88);
+    const tx = document.createElementNS("http://www.w3.org/2000/svg", "text");
+    tx.setAttribute("x", p.x); tx.setAttribute("y", p.y + 3);
+    tx.setAttribute("text-anchor", "middle");
+    tx.setAttribute("fill", "rgba(190,205,255,0.55)");
+    tx.setAttribute("font-size", "8.5");
+    tx.setAttribute("font-family", "SFMono-Regular, Menlo, monospace");
+    tx.setAttribute("letter-spacing", "1.2");
+    tx.textContent = c.t;
+    ticksG.appendChild(tx);
+  });
+
+  /* ── Mode toggle (illustrative) ───────────────────────────────────── */
+  let mode = "STD";
+  const mStd = document.getElementById("mStd"), mSol = document.getElementById("mSol");
+  const note = document.getElementById("modeNote");
+  mStd.onclick = function () {
+    mode = "STD"; mStd.classList.add("active"); mSol.classList.remove("active");
+    note.textContent = "The time your phone shows — agreed by committee, shared across a whole time zone.";
+  };
+  mSol.onclick = function () {
+    mode = "SOL"; mSol.classList.add("active"); mStd.classList.remove("active");
+    note.textContent = "When the Sun is actually over YOU. 180° is the true moment it crosses your sky — no time zones, no politics.";
+  };
+
+  /* ── Tick loop ────────────────────────────────────────────────────── */
+  const elT = document.getElementById("ltime"), elA = document.getElementById("ampm");
+  const elR = document.getElementById("rho"), elG = document.getElementById("gloss");
+  const elHand = document.getElementById("hand");
+  const elSunC = document.getElementById("sunConst"), elMoonC = document.getElementById("moonConst");
+  const elMoonW = document.getElementById("moonPhaseWord"), elWhere = document.getElementById("whereDeg");
+
+  function pad(n) { return String(n).padStart(2, "0"); }
+  function update() {
+    const d = new Date();
+    let h = d.getHours();
+    const ap = h >= 12 ? "PM" : "AM";
+    let h12 = h % 12; if (h12 === 0) h12 = 12;
+    elT.textContent = h12 + ":" + pad(d.getMinutes()) + ":" + pad(d.getSeconds());
+    elA.textContent = ap;
+
+    let r = rho(d);
+    // "True solar" illustration: nudge by a gentle synthetic offset so the
+    // toggle visibly does something (real version uses geolocation + solar noon)
+    if (mode === "SOL") r = (r + 7.3) % 360;
+    elR.textContent = r.toFixed(2).padStart(6, "0");
+    elG.textContent = gloss(r);
+    elWhere.textContent = "ρ " + r.toFixed(0) + "°";
+    elHand.style.transform = "rotate(" + (180 - r) + "deg)";
+
+    const sc = sunConstellation(d);
+    const mi = moonInfo(d);
+    elSunC.textContent = sc;
+    elMoonC.textContent = mi.constellation;
+    elMoonW.textContent = mi.word;
+  }
+  update();
+  setInterval(update, 250);
+
+  /* ── Real night sky: starfield + Milky Way haze + twinkle ─────────── */
+  const cv = document.getElementById("sky"), cx = cv.getContext("2d");
+  let stars = [], W = 0, H = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function rand(a, b) { return a + Math.random() * (b - a); }
+  function build() {
+    W = window.innerWidth; H = window.innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    cv.style.width = W + "px"; cv.style.height = H + "px";
+    cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const count = Math.round((W * H) / 5200); // density, scales with screen
+    stars = [];
+    for (let i = 0; i < count; i++) {
+      // bias stars toward the upper sky; fewer near the warm horizon
+      const y = Math.pow(Math.random(), 1.5) * H;
+      stars.push({
+        x: Math.random() * W, y: y,
+        r: rand(0.3, 1.6),
+        base: rand(0.15, 0.9),
+        amp: rand(0.05, 0.35),
+        sp: rand(0.4, 1.6),
+        ph: rand(0, Math.PI * 2),
+        // a few stars get a faint warm/cool tint
+        warm: Math.random() < 0.12,
+      });
+    }
+  }
+
+  // Milky Way: soft diagonal band of extra haze
+  function milkyWay() {
+    cx.save();
+    cx.translate(W * 0.5, H * 0.42);
+    cx.rotate(-0.5);
+    const g = cx.createLinearGradient(0, -H * 0.18, 0, H * 0.18);
+    g.addColorStop(0,   "rgba(120,140,210,0)");
+    g.addColorStop(0.5, "rgba(150,165,225,0.06)");
+    g.addColorStop(1,   "rgba(120,140,210,0)");
+    cx.fillStyle = g;
+    cx.fillRect(-W, -H * 0.18, W * 2, H * 0.36);
+    cx.restore();
+  }
+
+  function draw(t) {
+    // sky gradient
+    const g = cx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0,    "#070b16");
+    g.addColorStop(0.55, "#0e1428");
+    g.addColorStop(0.85, "#161a30");
+    g.addColorStop(1,    "#241f33");
+    cx.fillStyle = g;
+    cx.fillRect(0, 0, W, H);
+
+    milkyWay();
+
+    for (const s of stars) {
+      const tw = reduce ? s.base : s.base + s.amp * Math.sin(t * 0.001 * s.sp + s.ph);
+      const o = Math.max(0, Math.min(1, tw));
+      cx.beginPath();
+      cx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+      cx.fillStyle = s.warm
+        ? "rgba(255,225,200," + o + ")"
+        : "rgba(234,240,255," + o + ")";
+      cx.fill();
+      // soft halo for the brightest
+      if (s.r > 1.2) {
+        cx.beginPath();
+        cx.arc(s.x, s.y, s.r * 2.6, 0, Math.PI * 2);
+        cx.fillStyle = "rgba(234,240,255," + (o * 0.12) + ")";
+        cx.fill();
+      }
+    }
+    if (!reduce) requestAnimationFrame(draw);
+  }
+
+  build();
+  window.addEventListener("resize", function () { dpr = Math.min(window.devicePixelRatio || 1, 2); build(); if (reduce) draw(0); });
+  if (reduce) draw(0); else requestAnimationFrame(draw);
+})();
+</script>
+</body>
+</html>
