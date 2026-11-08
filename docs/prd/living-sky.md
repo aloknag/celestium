@@ -153,6 +153,11 @@ Sagittarius · Gemini overhead"* — time expressed as **places you can point at
 - Reuse: `useCelestium()` (rotation, solar, lunar, mode, geo), `CONSTELLATIONS`,
   the moon spotlight-mask & rotating-group patterns in `Visualizer.tsx`, palette
   tokens in `tailwind.config.cjs`, glow utilities in `index.css`.
+  *As built:* the landing reads `astronomy-engine` through a new pure
+  `src/lib/sky.ts` instead of `useCelestium()` (wall-clock-only so it cannot
+  time-warp, re-renders at 60 Hz, may prompt for geolocation), and uses new
+  `night-*` tokens instead of the HUD glow utilities. See
+  `docs/plans/living-sky-landing.md` (D2).
 - Rendering: SVG + Framer Motion, or Canvas where many twinkling stars demand it;
   keep the bundle light for the installable PWA.
 - Performance: generate the starfield once; cap animated nodes; smooth on mobile.
@@ -168,11 +173,18 @@ Sagittarius · Gemini overhead"* — time expressed as **places you can point at
 
 - Q1. Does the calm/nature aesthetic stay scoped to the landing, or become the
   app's new direction overall?
+  **Resolved (v1): scoped to the landing.** `html[data-theme="sky"]` switches off
+  the HUD-only grain, scanlines and header flicker; the HUD keeps its look.
 - Q2. Geocentric model only, or also offer a heliocentric "true" view as a toggle?
+  *Open — out of scope for v1.*
 - Q3. Relationship to the previously-planned **clock-first on-ramp** (PR #8) — is
   the Living Sky the new landing *instead of* the clock dial, or do they layer
   (sky as backdrop, clock in front)?
+  **Resolved: the Living Sky replaces it as the landing at `/`; the HUD moves to
+  `/cosmos`** (the route name PR #8 proposed). The sky's clock ⇄ ρ readout does the
+  on-ramp's job, so PR #8 is superseded (closing it is the owner's call).
 - Q4. Default mode — NOW (honest/still) or DAY (immediately alive)?
+  **Resolved: NOW** — the honest default, as FR5 already states.
 
 ## 13. Future scope (not in v1)
 

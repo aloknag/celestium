@@ -33,8 +33,8 @@ change at human timescales). Only α, λ, ρ are computed live.
 
 ## Architecture & data flow
 
-- `App.tsx` is a thin React Router shell: `/` → `Dashboard`, `/help` → `Help`,
-  `*` → redirect home.
+- `App.tsx` is a thin React Router shell: `/` → `Landing` (the Living Sky),
+  `/cosmos` → `Dashboard` (the HUD), `/help` → `Help`, `*` → redirect home.
 - **`useCelestium()` (`src/hooks/useCelestium.ts`) is the orchestrator.** It
   composes the per-quantity hooks, wires geolocation into rotation, owns the
   ISO⇄TRUE_SOLAR mode toggle, and builds `godString` / `fullString`. Start here
@@ -55,6 +55,20 @@ change at human timescales). Only α, λ, ρ are computed live.
 - Presentation: `pages/Dashboard.tsx` composes the HUD; `components/HUD/`
   (`Visualizer.tsx` = SVG ring + star map, `SidePanel.tsx`, `RightPanel.tsx`);
   `components/common/SlotCounter.tsx` = animated digit roller.
+- **Living Sky landing (`/`)** is a geocentric model of the sky (spec:
+  `docs/prd/living-sky.md`, plan: `docs/plans/living-sky-landing.md`). It
+  deliberately does **not** use `useCelestium()` — that stack is wall-clock-only
+  (can't time-warp), re-renders at 60 Hz and can trigger a geolocation prompt.
+  Instead: `lib/sky.ts` (pure Sun/Moon/constellation/frame math on
+  `astronomy-engine`), `lib/skyClock.ts` (model clock, DAY/MONTH/YEAR rates),
+  `lib/starfield.ts` (seeded, prefix-stable stars), `lib/skyFormat.ts` (readout
+  formatting), `components/Sky/` (`drawSky.ts` canvas renderer, `SkyScene.tsx` rAF
+  loop, `SkyOverlay.tsx` DOM readout/controls) and `pages/Landing.tsx`. Styling
+  uses the `night-*` / `font-sky-*` Tailwind tokens; `html[data-theme="sky"]`
+  switches off the HUD-only grain, scanlines and header flicker. The landing never
+  reads `EQUINOX_TABLE`. Its Sun is the true ecliptic longitude, whereas the HUD's
+  α is the 1°/day calendar arc, so the two can name different constellations for up
+  to ~a week late in the year.
 
 ## Critical domain rules (don't "fix" these — they are the spec)
 
@@ -84,18 +98,21 @@ npm ci          # install (package-lock.json is committed)
 npm run dev      # Vite dev server (may pick 5174+ if 5173 busy — use printed URL)
 npm run build    # tsc -b (typecheck) THEN vite build
 npm run lint      # eslint . over **/*.{ts,tsx}
+npm run test      # Vitest: pure functions in src/lib/*.test.ts
 npm run preview   # serve the production build
 ```
 
-There is **no unit-test runner**. Verification is done with Playwright MCP smoke
-tests against a running dev server (see checklist below).
+Vitest covers only the pure functions in `src/lib/` (sky math, model clock,
+starfield, formatting). UI verification is done with Playwright MCP smoke tests
+against a running dev server (see checklist below).
 
 ## Working conventions (from .github/copilot-instructions.md)
 
 - **Do NOT auto-start the dev server** unless verification requires it. The repo
   convention is to let the user start `npm run dev` and provide the URL.
 - For a feature/fix: branch, implement minimally + spec-driven, then run in
-  order: `npm run lint` → `npm run build` → Playwright MCP smoke tests.
+  order: `npm run lint` → `npm run test` → `npm run build` → Playwright MCP smoke
+  tests.
 - TypeScript is `strict` with `noUnusedLocals`/`noUnusedParameters` — keep types
   tight and don't leave unused exports (the build will fail).
 - Styling is Tailwind-first using the Celestium palette tokens from
@@ -113,7 +130,7 @@ tests against a running dev server (see checklist below).
 ### Playwright MCP smoke-test checklist
 
 After UI changes, verify the relevant subset:
-1. Dashboard renders, no console errors, HUD visible.
+1. Dashboard (`/cosmos`) renders, no console errors, HUD visible.
 2. God String legible (AEON/EPOCH/ARC/PHASE/ROTATION + punctuation).
 3. ISO ⇄ TRUE_SOLAR toggle updates the protocol badge without crashing.
 4. ISO uninitialized state: LAT/LON labels readable, values show placeholder.
@@ -121,6 +138,8 @@ After UI changes, verify the relevant subset:
 6. Visualizer ring + constellations stay visible when not focused.
 7. Responsive: desktop (e.g. 1280×800) doesn't overflow vertically.
 8. Typography: sans labels, mono numbers, no font-flash layout break.
+9. Landing (`/`): canvas renders, NOW/DAY/MONTH/YEAR controls work, no console
+   errors, no HUD scanlines/grain, no overlap between overlay blocks at 320×568.
 
 ## Tech stack
 
