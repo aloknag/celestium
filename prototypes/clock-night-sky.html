@@ -57,6 +57,12 @@
   .rho   { font-size: clamp(15px, 4vw, 19px); color: var(--sun); margin-top: 2px; }
   .rho .sym { color: var(--text-dim); font-style: italic; margin-right: .3em; }
   .rho .deg { color: var(--text-dim); }
+  /* honest/accelerated badge — tells the viewer whether the clock is live or simulated */
+  .modeline {
+    font-family: "SFMono-Regular",Menlo,monospace;
+    font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--text-dim); opacity: .8; margin-top: 8px;
+  }
 
   /* the celestial sentence */
   .sentence {
@@ -83,7 +89,8 @@
   .btns button {
     background: rgba(16,21,38,.5); color: var(--text-dim);
     border: 1px solid var(--line); border-radius: 999px;
-    padding: 8px 15px; cursor: pointer;
+    min-height: 44px; padding: 10px 17px; cursor: pointer;
+    touch-action: manipulation;
     font-family: "SFMono-Regular",Menlo,monospace; font-size: 12px; letter-spacing: .08em;
     backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
     transition: all .25s ease;
@@ -92,11 +99,17 @@
     color: var(--sun); border-color: rgba(255,206,138,.55);
     box-shadow: 0 0 16px rgba(255,206,138,.18);
   }
+  .btns button:disabled { opacity: .3; cursor: default; box-shadow: none; }
   .caption {
     font-family: "SFMono-Regular",Menlo,monospace;
-    font-size: 9.5px; letter-spacing: .12em; color: var(--text-dim); opacity: .5; text-align: center;
+    font-size: 11px; letter-spacing: .12em; color: var(--text-dim); text-align: center;
   }
-  @media (prefers-reduced-motion: reduce) { #sky { /* drawn once */ } }
+  /* Narrow screens: keep controls compact and lift the sentence clear of them */
+  @media (max-width: 480px) {
+    .btns { gap: 6px; flex-wrap: nowrap; }
+    .btns button { padding: 9px 10px; font-size: 11px; letter-spacing: .02em; }
+    .sentence { bottom: 172px; }
+  }
 </style>
 </head>
 <body>
@@ -111,6 +124,7 @@
     <div class="readout">
       <div class="ltime mono"><span id="ltime">--:--:--</span><span class="ampm" id="ampm">--</span></div>
       <div class="rho mono"><span class="sym">ρ</span><span id="rho">000</span><span class="deg">°</span></div>
+      <div class="modeline" id="modeline">NOW · live sky, real time</div>
     </div>
 
     <div class="sentence">
@@ -122,8 +136,8 @@
     <div class="controls">
       <div class="watch-label">Watch a rhythm pass</div>
       <div class="btns">
-        <button data-mode="now">NOW</button>
-        <button data-mode="day" class="active">DAY</button>
+        <button data-mode="now" class="active">NOW</button>
+        <button data-mode="day">DAY</button>
         <button data-mode="month">MONTH</button>
         <button data-mode="year">YEAR</button>
         <button data-mode="pause">❚❚</button>
@@ -274,7 +288,7 @@
   }
 
   /* ── Model time + speed ───────────────────────────────────────────── */
-  let mode = "day";
+  let mode = "now";
   let modelMs = Date.now();
   let lastTs = performance.now();
   const SPEED = {            // how fast model time advances vs real time
@@ -284,10 +298,26 @@
     year: (365.25 * 86400) / 34,     // a year in ~34s
     pause: 0
   };
+  // Honest labels: NOW is the truth; the others announce that they're simulated.
+  const MODE_LABEL = {
+    now: "NOW · live sky, real time",
+    day: "DAY · one day in ~22s · simulated",
+    month: "MONTH · one month in ~26s · simulated",
+    year: "YEAR · one year in ~34s · simulated",
+    pause: "PAUSED"
+  };
 
   const btns = document.querySelectorAll(".btns button");
+  // prefers-reduced-motion: keep the honest live sky, disable the accelerated modes
+  if (reduce) {
+    btns.forEach(function (b) {
+      const m = b.getAttribute("data-mode");
+      if (m === "day" || m === "month" || m === "year") b.disabled = true;
+    });
+  }
   btns.forEach(function (b) {
     b.addEventListener("click", function () {
+      if (b.disabled) return;
       mode = b.getAttribute("data-mode");
       btns.forEach(function (x) { x.classList.remove("active"); });
       b.classList.add("active");
@@ -300,6 +330,7 @@
   const elR = document.getElementById("rho");
   const elSunC = document.getElementById("sunC"), elMoonC = document.getElementById("moonC");
   const elMoonW = document.getElementById("moonW"), elUpC = document.getElementById("upC");
+  const elMode = document.getElementById("modeline");
   function pad(n) { return String(n).padStart(2, "0"); }
   let txtAccum = 0;
 
@@ -428,6 +459,7 @@
       elMoonC.textContent = moon.lon != null ? constellationAt(moon.lon) : "—";
       elMoonW.textContent = moon.word;
       elUpC.textContent = upC;
+      elMode.textContent = MODE_LABEL[mode];
     }
 
     requestAnimationFrame(frame);
