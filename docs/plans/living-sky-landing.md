@@ -343,6 +343,7 @@ Deviations from the plan, each decided during execution:
 - The `[ ◀ SKY ]` back link sits in the HUD header's top-left, not the footer: in the footer it wrapped "[ SYSTEM MANUAL ]" and shrank the visualizer (576 → 563 px at 1280×800). The HUD layout is now identical to baseline.
 - `SkyScene` repaints inside its ResizeObserver callback: resizing clears the bitmap and the next rAF runs after paint, so every resize flashed a blank frame (found in review; probe RED 0 % → GREEN 100 % opaque).
 - D5 stayed at its default: the HUD still derives its constellation from α (documented in `CLAUDE.md`). `npm ci` was skipped (baseline already measured), no push and no PR.
+- Direction: after review the planned look-south orientation (D3d) was mirrored. `screenAngle = (lon − meridianLon) mod 360`, so DAY turns anticlockwise, MONTH and YEAR clockwise like the HUD ring, and east is on the right. The D3d row and the Task 1 test snippet above show the original.
 
 Verified: 60 Vitest tests; lint and build green; main chunk 174.16 kB gzip (+4.4 kB over the 169.76 kB baseline). Playwright (dev server and production preview): day/night sweep, overhead constellation, DAY / YEAR / MONTH behaviour, reduced motion, no overlay overlap at 320×568 / 390×844 / 1280×800, contrast ≥ 5.2:1, HUD checklist, `/cosmos` deep-link reload.
 

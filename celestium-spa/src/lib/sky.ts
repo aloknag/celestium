@@ -85,10 +85,11 @@ export function meridianLongitude(sunLon: number, dayFrac: number): number {
     return norm360(sunLon + 180 + 360 * dayFrac);
 }
 
-// Look-south view: the meridian longitude sits at the top, longitudes increase
-// counter-clockwise (east on the left), so the wheel turns clockwise.
+// Mirror view (east on the right): the meridian longitude sits at the top and longitudes
+// increase clockwise, like the HUD ring. The daily wheel therefore turns anticlockwise
+// while the Sun and Moon drift clockwise against the stars.
 export function screenAngle(lon: number, meridianLon: number): number {
-    return norm360(meridianLon - lon);
+    return norm360(lon - meridianLon);
 }
 
 // x of the terminator at the disc's centre line, measured toward the Sun:

@@ -60,11 +60,14 @@ describe('frame', () => {
     expect(dayFraction(new Date(2026, 10, 8, 12, 0, 0))).toBeCloseTo(0.5, 9);
     expect(dayFraction(new Date(2026, 10, 8, 6, 30, 0))).toBeCloseTo(6.5 / 24, 9);
   });
-  it('Sun is at the top at noon, bottom at midnight, left (east) at 06:00', () => {
+  it('Sun is at the top at noon, bottom at midnight, right (east) at 06:00, left at 18:00; longitudes run clockwise', () => {
     const S = 225;
     expect(screenAngle(S, meridianLongitude(S, 0.5))).toBeCloseTo(0, 9);
     expect(screenAngle(S, meridianLongitude(S, 0))).toBeCloseTo(180, 9);
-    expect(screenAngle(S, meridianLongitude(S, 0.25))).toBeCloseTo(270, 9);
+    expect(screenAngle(S, meridianLongitude(S, 0.25))).toBeCloseTo(90, 9);
+    expect(screenAngle(S, meridianLongitude(S, 0.75))).toBeCloseTo(270, 9);
+    // 60° of longitude east of the meridian is 60° clockwise, like the HUD ring
+    expect(screenAngle(100, 40)).toBeCloseTo(60, 9);
   });
   it('overhead follows the season (prototype said PISCES at every midnight)', () => {
     expect(constellationAtLongitude(meridianLongitude(226, 0))).toBe('ARIES');
