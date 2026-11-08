@@ -19,11 +19,22 @@ module.exports = {
                     astral: '#A5A5C0',   // Light periwinkle grey (legibility)
                     null: '#ff3333',     // Danger Red
                     dim: '#CBD5E1',      // Slate-300 (global visibility boost)
-                }
+                },
+                // Living Sky landing palette ("night": Tailwind's built-in `sky` scale would collide)
+                night: {
+                    bg: '#05070f',
+                    text: '#dfe6f5',
+                    dim: '#97a0bd',
+                    sun: '#ffce8a',
+                    moon: '#e8ecf5',
+                },
             },
             fontFamily: {
                 mono: ['"Share Tech Mono"', 'monospace'],
                 sans: ['"Michroma"', 'sans-serif'],
+                // Living Sky landing: calm observatory type, system fonts only
+                'sky-serif': ['"Iowan Old Style"', '"Palatino Linotype"', 'Palatino', 'Georgia', 'serif'],
+                'sky-mono': ['"SFMono-Regular"', '"JetBrains Mono"', 'Menlo', 'Consolas', 'monospace'],
             },
             backgroundImage: {
                 'obsidian-radial': 'radial-gradient(circle at 50% 50%, #111419 0%, #050505 100%)',

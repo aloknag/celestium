@@ -61,6 +61,18 @@ export function constellationAtLongitude(lon: number): string {
     return match ? match.name : 'PISCES';
 }
 
+export interface Sector { name: string; abbr: string; start: number; end: number; mid: number }
+
+// The 13 IAU sun-path sectors as [start,end) longitudes. `end` exceeds 360 for the
+// Pisces sector that wraps through 0°; `mid` is normalized to [0,360).
+export function constellationSectors(): Sector[] {
+    const list = CONSTELLATIONS.slice(1); // drop the duplicate "loop start" Pisces
+    return list.map((c, i) => {
+        const end = i + 1 < list.length ? list[i + 1].start : list[0].start + 360;
+        return { name: c.name, abbr: c.abbr, start: c.start, end, mid: norm360((c.start + end) / 2) };
+    });
+}
+
 // Local wall-clock fraction of the day, so ρ agrees with the displayed time.
 export function dayFraction(date: Date): number {
     const secs = date.getHours() * 3600 + date.getMinutes() * 60 + date.getSeconds()

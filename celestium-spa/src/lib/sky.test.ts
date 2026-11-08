@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import * as Astronomy from 'astronomy-engine';
 import { EQUINOX_TABLE } from './astronomy';
 import { skyAt, phaseWordAt, constellationAtLongitude, dayFraction,
-         meridianLongitude, screenAngle, terminatorX } from './sky';
+         meridianLongitude, screenAngle, terminatorX, constellationSectors } from './sky';
 
 const circ = (a: number, b: number) => Math.abs(((a - b + 540) % 360) - 180);
 const phaseAt = (deg: number) =>
@@ -73,5 +73,22 @@ describe('frame', () => {
     expect(terminatorX(0, 10)).toBeCloseTo(10, 9);
     expect(terminatorX(90, 10)).toBeCloseTo(0, 9);
     expect(terminatorX(180, 10)).toBeCloseTo(-10, 9);
+  });
+});
+
+describe('constellationSectors', () => {
+  const sectors = constellationSectors();
+  it('has the 13 IAU sectors tiling the circle', () => {
+    expect(sectors).toHaveLength(13);
+    expect(sectors.reduce((sum, s) => sum + (s.end - s.start), 0)).toBeCloseTo(360, 9);
+  });
+  it('puts every midpoint inside its own sector (prototype labels were one sector off)', () => {
+    for (const s of sectors) expect(constellationAtLongitude(s.mid)).toBe(s.name);
+  });
+  it('wraps Pisces through 0°', () => {
+    const p = sectors.find(s => s.name === 'PISCES')!;
+    expect(p.start).toBe(351);
+    expect(p.end).toBe(389);
+    expect(p.mid).toBeCloseTo(10, 9);
   });
 });

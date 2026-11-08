@@ -105,3 +105,14 @@ header {
     opacity: 0.99;
   }
 }
+
+/* Living Sky landing (<html data-theme="sky">): film grain, scanlines and header
+   flicker are HUD-only looks, so they are switched off while the landing is mounted. */
+html[data-theme="sky"] body::before,
+html[data-theme="sky"] body::after {
+  display: none;
+}
+
+html[data-theme="sky"] header {
+  animation: none;
+}
