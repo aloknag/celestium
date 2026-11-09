@@ -3,6 +3,7 @@ import type { ReactElement } from 'react';
 import { drawSky } from './drawSky';
 import type { SkyFrame } from './drawSky';
 import { dayFraction, meridianLongitude, skyAt } from '../../lib/sky';
+import { dialLayout } from '../../lib/skyLayout';
 import type { SkySnapshot } from '../../lib/sky';
 import { FROZEN_MODES, stepModelTime } from '../../lib/skyClock';
 import type { SkyMode } from '../../lib/skyClock';
@@ -44,7 +45,8 @@ export function SkyScene({ mode, reduced, onSnapshot }: SkySceneProps): ReactEle
 
         let w = 1, h = 1;
         let field: Starfield = { stars: [], haze: [] };
-        let lastDraw: Omit<SkyFrame, 'starfield'> | null = null; // lets a resize repaint at once
+        let layout = { cy: 0, rz: 0 };                                          // dial centre and radius
+        let lastDraw: Omit<SkyFrame, 'starfield' | 'cy' | 'rz'> | null = null;  // lets a resize repaint at once
         const resize = () => {
             const rect = canvas.getBoundingClientRect();
             const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -56,9 +58,10 @@ export function SkyScene({ mode, reduced, onSnapshot }: SkySceneProps): ReactEle
             // prefix of the same field: a resize never re-rolls the stars
             const n = starCount(w, h);
             field = { stars: fullField.stars.slice(0, n), haze: fullField.haze.slice(0, Math.round(n * 0.7)) };
+            layout = dialLayout(w, h);
             // Resizing the bitmap clears it, and the next rAF runs after this frame is painted:
             // repaint now, or every resize (window drag, mobile address bar) flashes a blank frame.
-            if (lastDraw) drawSky(ctx, { w, h }, { ...lastDraw, starfield: field });
+            if (lastDraw) drawSky(ctx, { w, h }, { ...lastDraw, ...layout, starfield: field });
         };
         const ro = new ResizeObserver(resize);
         ro.observe(canvas);
@@ -110,7 +113,7 @@ export function SkyScene({ mode, reduced, onSnapshot }: SkySceneProps): ReactEle
                 showYou: !frozen,
                 twinkleT: reducedRef.current ? 0 : ts / 1000,
             };
-            drawSky(ctx, { w, h }, { ...lastDraw, starfield: field });
+            drawSky(ctx, { w, h }, { ...lastDraw, ...layout, starfield: field });
 
             if (ts - lastSnap >= SNAPSHOT_MS) {
                 lastSnap = ts;
