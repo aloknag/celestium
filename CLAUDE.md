@@ -61,14 +61,17 @@ change at human timescales). Only α, λ, ρ are computed live.
   (can't time-warp), re-renders at 60 Hz and can trigger a geolocation prompt.
   Instead: `lib/sky.ts` (pure Sun/Moon/constellation/frame math on
   `astronomy-engine`), `lib/skyClock.ts` (model clock, DAY/MONTH/YEAR rates),
-  `lib/starfield.ts` (seeded, prefix-stable stars), `lib/skyFormat.ts` (readout
+  `lib/starfield.ts` (seeded, prefix-stable stars), `lib/skyLayout.ts` (dial placement), `lib/skyFormat.ts` (readout
   formatting), `components/Sky/` (`drawSky.ts` canvas renderer, `SkyScene.tsx` rAF
-  loop, `SkyOverlay.tsx` DOM readout/controls) and `pages/Landing.tsx`. Styling
+  loop, `SkyOverlay.tsx` + `SkyMenu.tsx` DOM readout/controls/menu) and `pages/Landing.tsx`. Styling
   uses the `night-*` / `font-sky-*` Tailwind tokens; `html[data-theme="sky"]`
   switches off the HUD-only grain, scanlines and header flicker. The landing never
   reads `EQUINOX_TABLE`. Its Sun is the true ecliptic longitude, whereas the HUD's
   α is the 1°/day calendar arc, so the two can name different constellations for up
-  to ~a week late in the year.
+  to ~a week late in the year. Orientation: east is on the right (`screenAngle` in
+  `lib/sky.ts`), so the daily wheel turns anticlockwise while the Sun and Moon drift
+  clockwise, like the HUD ring. From 768 px the readout sits top-left and the rhythm
+  controls bottom-right; phones hide the controls.
 
 ## Critical domain rules (don't "fix" these — they are the spec)
 
@@ -138,7 +141,8 @@ After UI changes, verify the relevant subset:
 6. Visualizer ring + constellations stay visible when not focused.
 7. Responsive: desktop (e.g. 1280×800) doesn't overflow vertically.
 8. Typography: sans labels, mono numbers, no font-flash layout break.
-9. Landing (`/`): canvas renders, NOW/DAY/MONTH/YEAR controls work, no console
+9. Landing (`/`): canvas renders, NOW/DAY/MONTH/YEAR controls work (from 768 px;
+   hidden on phones), Menu opens and closes, no console
    errors, no HUD scanlines/grain, no overlap between overlay blocks at 320×568.
 
 ## Tech stack

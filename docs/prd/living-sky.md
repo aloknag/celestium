@@ -105,6 +105,7 @@ Sagittarius · Gemini overhead"* — time expressed as **places you can point at
   - **Pause.**
   All driven by a single "model time"; positions stay internally consistent
   across modes.
+  *As built:* the controls sit bottom-right from 768 px wide and are hidden on phones.
 - **FR6 — Coordinate overlay.** Always show the familiar **local time** and its
   Celestium equivalent (**ρ°**), plus the live constellation sentence (FR2). This
   is the bridge between old and new.
