@@ -51,7 +51,14 @@ export function Dashboard() {
     <div className="w-screen h-[100dvh] bg-celestium-bg text-celestium-text font-mono flex flex-col items-center overflow-y-auto md:overflow-hidden selection:bg-celestium-gold selection:text-black">
 
       {/* HEADER: Rigid Height (shrink-0) */}
-      <header className="flex flex-col items-center gap-4 z-10 w-full p-4 shrink-0">
+      <header className="relative flex flex-col items-center gap-4 z-10 w-full p-4 shrink-0">
+        {/* Back to the Living Sky landing. Absolute, so the HUD layout is unchanged. */}
+        <Link
+          to="/"
+          className="absolute left-4 top-2 px-2 py-2 text-[10px] tracking-[0.15em] uppercase text-celestium-dim hover:text-white transition-colors"
+        >
+          [ ◀ SKY ]
+        </Link>
         <motion.h1
           initial={{ opacity: 0, letterSpacing: "0em", filter: "blur(10px)" }}
           animate={{ opacity: 1, letterSpacing: "0.4em", filter: "blur(0px)" }}

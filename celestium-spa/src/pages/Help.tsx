@@ -21,7 +21,7 @@ export function Help() {
 
           <div>
             <Link
-              to="/"
+              to="/cosmos"
               className="inline-flex items-center justify-center text-xs md:text-sm tracking-[0.35em] uppercase text-white border border-celestium-dim/40 px-4 py-2 hover:border-celestium-dim/70 hover:text-white transition-colors"
             >
               [ BACK TO DASHBOARD ]
