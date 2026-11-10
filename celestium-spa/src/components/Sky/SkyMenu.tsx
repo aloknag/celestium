@@ -28,16 +28,21 @@ export function SkyMenu(): ReactElement {
         const onPress = (e: PointerEvent) => {
             if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
         };
+        // Escape works from anywhere: Safari and Firefox on macOS do not focus a button on click
+        const onKey = (e: { key: string }) => {
+            if (e.key !== 'Escape') return;
+            setOpen(false);
+            buttonRef.current?.focus();
+        };
         document.addEventListener('pointerdown', onPress);
-        return () => document.removeEventListener('pointerdown', onPress);
+        document.addEventListener('keydown', onKey);
+        return () => {
+            document.removeEventListener('pointerdown', onPress);
+            document.removeEventListener('keydown', onKey);
+        };
     }, [open]);
 
     const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-        if (e.key === 'Escape' && open) {
-            setOpen(false);
-            buttonRef.current?.focus();
-            return;
-        }
         if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
         if (!open) {
             if (e.key === 'ArrowDown' && e.target === buttonRef.current) {
@@ -56,7 +61,8 @@ export function SkyMenu(): ReactElement {
     };
 
     const onBlur = (e: FocusEvent<HTMLDivElement>) => {
-        if (open && !rootRef.current?.contains(e.relatedTarget as Node | null)) setOpen(false);
+        // only when focus moves to another element; a click on the panel padding (no target) keeps it open
+        if (open && e.relatedTarget && !rootRef.current?.contains(e.relatedTarget as Node)) setOpen(false);
     };
 
     return (

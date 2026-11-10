@@ -45,8 +45,8 @@ export function SkyScene({ mode, reduced, onSnapshot }: SkySceneProps): ReactEle
 
         let w = 1, h = 1;
         let field: Starfield = { stars: [], haze: [] };
-        let layout = { cy: 0, rz: 0 };                                          // dial centre and radius
-        let lastDraw: Omit<SkyFrame, 'starfield' | 'cy' | 'rz'> | null = null;  // lets a resize repaint at once
+        let layout = { cx: 0, cy: 0, rz: 0 };                                          // dial centre and radius
+        let lastDraw: Omit<SkyFrame, 'starfield' | 'cx' | 'cy' | 'rz'> | null = null;  // lets a resize repaint at once
         const resize = () => {
             const rect = canvas.getBoundingClientRect();
             const dpr = Math.min(window.devicePixelRatio || 1, 2);

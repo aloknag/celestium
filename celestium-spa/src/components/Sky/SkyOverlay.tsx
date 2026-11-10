@@ -39,8 +39,8 @@ export function SkyOverlay({ snapshot, mode, onModeChange }: SkyOverlayProps): R
     return (
         <div className="pointer-events-none absolute inset-0 z-10">
             <div className="absolute inset-x-0 top-0 px-4 pt-5 text-center md:right-auto md:px-7 md:pt-6 md:text-left">
-                <div data-sky="wordmark" className="flex flex-col items-center gap-[7px] font-sky-mono text-xs uppercase leading-none tracking-[0.55em] text-night-dim md:block">
-                    <span className="indent-[0.55em] md:indent-0">Celestium</span>
+                <div data-sky="wordmark" className="flex flex-col items-center gap-[7px] font-sky-mono text-xs uppercase leading-none tracking-[0.45em] text-night-dim md:block md:tracking-[0.55em]">
+                    <span className="indent-[0.45em] md:indent-0">Celestium</span>
                     <span className="hidden md:inline">:</span>{' '}
                     <span
                         className={`indent-[0.32em] text-[10px] tracking-[0.32em] md:indent-0 md:text-xs md:tracking-[0.55em] ${simulated ? 'text-night-sun' : ''}`}
@@ -69,7 +69,7 @@ export function SkyOverlay({ snapshot, mode, onModeChange }: SkyOverlayProps): R
 
             <p
                 data-sky="sentence"
-                className="absolute bottom-[26px] left-1/2 w-[min(680px,92vw)] -translate-x-1/2 text-center text-[clamp(13px,2.3vw,16px)] leading-[1.7] text-night-dim [text-shadow:0_2px_14px_rgba(0,0,0,0.7)] md:bottom-[104px] min-[1280px]:bottom-[26px] min-[1280px]:w-[min(680px,calc(100vw-780px))]"
+                className="absolute bottom-[26px] left-1/2 w-[min(680px,92vw)] -translate-x-1/2 text-center text-[clamp(13px,2.3vw,16px)] leading-[1.7] text-night-dim [text-shadow:0_2px_14px_rgba(0,0,0,0.7)] md:bottom-[104px] min-[1280px]:bottom-[26px] min-[1280px]:w-[min(680px,calc(100vw-780px))] [@media(max-height:479.98px)]:hidden"
             >
                 <span className="italic text-night-sun">Sun in <b className="font-semibold">{name(snapshot?.sky.sunLon)}</b></span>
                 {' · '}
@@ -85,7 +85,7 @@ export function SkyOverlay({ snapshot, mode, onModeChange }: SkyOverlayProps): R
                 )}
             </p>
 
-            <div data-sky="controls" className="pointer-events-auto absolute bottom-[26px] right-7 hidden flex-col items-end gap-2 md:flex">
+            <div data-sky="controls" className="pointer-events-auto absolute bottom-[26px] right-7 hidden flex-col items-end gap-2 md:flex [@media(max-height:479.98px)]:hidden">
                 <div className="font-sky-mono text-[10px] uppercase tracking-[0.28em] text-night-dim">Watch a rhythm pass</div>
                 <div role="group" aria-label="Time rhythm" className="flex gap-2">
                     {CONTROLS.map(c => {

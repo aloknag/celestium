@@ -13,7 +13,8 @@ export interface SkyFrame {
     showYou: boolean;      // false while the daily wheel is pinned (MONTH / YEAR)
     twinkleT: number;      // seconds; 0 freezes the twinkle (reduced motion)
     starfield: Starfield;  // already trimmed to starCount(w, h)
-    cy: number;            // dial centre y, CSS px (x is always w / 2); from dialLayout
+    cx: number;            // dial centre, CSS px; from dialLayout
+    cy: number;
     rz: number;            // ecliptic ring radius, CSS px; from dialLayout
 }
 
@@ -62,8 +63,7 @@ function drawLit(ctx: CanvasRenderingContext2D, x: number, y: number, r: number,
 
 export function drawSky(ctx: CanvasRenderingContext2D, view: { w: number; h: number }, frame: SkyFrame): void {
     const { w, h } = view;
-    const { sky, meridianLon, showYou, twinkleT, starfield, cy, rz } = frame;
-    const cx = w / 2;
+    const { sky, meridianLon, showYou, twinkleT, starfield, cx, cy, rz } = frame;
     const rSky = Math.hypot(Math.max(cx, w - cx), Math.max(cy, h - cy)); // reach the farthest corner
     const ang = (lon: number) => screenAngle(lon, meridianLon);
 

@@ -11,6 +11,17 @@ export function Landing(): ReactElement {
   const [snapshot, setSnapshot] = useState<SkySnapshot | null>(null);
   const reduced = useReducedMotion() ?? false;
 
+  // The rhythm controls are hidden on phones and short windows: never leave the sky
+  // simulated or paused once there is no way back to NOW.
+  useEffect(() => {
+    const withControls = window.matchMedia('(min-width: 768px) and (min-height: 480px)');
+    const onChange = (e: MediaQueryListEvent) => {
+      if (!e.matches) setMode('now');
+    };
+    withControls.addEventListener('change', onChange);
+    return () => withControls.removeEventListener('change', onChange);
+  }, []);
+
   // The HUD's grain, scanlines and header flicker are switched off by index.css
   // while this attribute is present.
   useEffect(() => {
