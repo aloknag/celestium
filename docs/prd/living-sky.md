@@ -111,6 +111,8 @@ Sagittarius · Gemini overhead"* — time expressed as **places you can point at
   is the bridge between old and new.
 - **FR7 — Accessibility.** Respect `prefers-reduced-motion` (freeze
   twinkle/orbits); maintain legible contrast of overlay text over the scene.
+  *As built:* the twinkle freezes and nothing auto-animates, but DAY / MONTH / YEAR
+  stay enabled because the viewer starts them.
 - **FR8 — Responsive.** Works on a mobile portrait viewport and desktop without
   layout breakage; the scene scales to fill.
 

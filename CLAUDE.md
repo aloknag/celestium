@@ -71,7 +71,9 @@ change at human timescales). Only α, λ, ρ are computed live.
   to ~a week late in the year. Orientation: east is on the right (`screenAngle` in
   `lib/sky.ts`), so the daily wheel turns anticlockwise while the Sun and Moon drift
   clockwise, like the HUD ring. From 768 px the readout sits top-left and the rhythm
-  controls bottom-right; phones hide the controls.
+  controls bottom-right; phones and windows under 480 px tall hide the controls (and
+  the sentence below 480 px). `lib/skyLayout.ts` (`SPEC`, `STRIP`) must match the
+  overlay's CSS: change one, change the other.
 
 ## Critical domain rules (don't "fix" these — they are the spec)
 
@@ -143,7 +145,9 @@ After UI changes, verify the relevant subset:
 8. Typography: sans labels, mono numbers, no font-flash layout break.
 9. Landing (`/`): canvas renders, NOW/DAY/MONTH/YEAR controls work (from 768 px;
    hidden on phones), Menu opens and closes, no console
-   errors, no HUD scanlines/grain, no overlap between overlay blocks at 320×568.
+   errors, no HUD scanlines/grain, no overlap between overlay blocks at 320×568, and
+   the ring clears the text at 1280×800 with the longest sentence (Sun, Moon and
+   overhead all in Sagittarius, e.g. 2027-01-06 11:00 local).
 
 ## Tech stack
 
