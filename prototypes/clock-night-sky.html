@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Celestium — Living Sky (concept)</title>
+<style>
+  /* ─── Celestium concept prototype ────────────────────────────────
+     A geocentric "living model": Earth at center, Sun & Moon orbiting,
+     the zodiac wheel of stars turning once a day, Moon showing its phase.
+     Watch a Day / Month / Year to see each rhythm move.
+     Self-contained — no build, no dependencies. Positions are APPROXIMATE;
+     this is a feel study, not an ephemeris. */
+
+  :root {
+    --text:     #dfe6f5;
+    --text-dim: #97a0bd;
+    --sun:      #ffce8a;
+    --moon:     #e8ecf5;
+    --line:     rgba(190,205,255,0.16);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: #05070f; }
+  body {
+    color: var(--text);
+    font-family: "Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .mono {
+    font-family: "SFMono-Regular","JetBrains Mono",Menlo,Consolas,monospace;
+    font-variant-numeric: tabular-nums; letter-spacing: 0.02em;
+  }
+  #sky { position: fixed; inset: 0; display: block; z-index: 0; }
+
+  /* ── Overlays ──────────────────────────────── */
+  .ui { position: fixed; inset: 0; z-index: 2; pointer-events: none; }
+  .ui > * { pointer-events: auto; }
+
+  .top {
+    position: absolute; top: env(safe-area-inset-top, 0); left: 0; right: 0;
+    text-align: center; padding: 22px 16px 0;
+  }
+  .wordmark {
+    font-family: "SFMono-Regular",Menlo,monospace;
+    font-size: 12px; letter-spacing: 0.55em; text-indent: 0.55em;
+    text-transform: uppercase; color: var(--text-dim);
+  }
+  .tagline { font-style: italic; font-size: 13px; color: var(--text-dim); opacity: .8; margin-top: 6px; }
+
+  /* readout */
+  .readout {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    top: 84px; text-align: center; text-shadow: 0 2px 18px rgba(0,0,0,.6);
+  }
+  .ltime { font-size: clamp(34px, 9vw, 52px); }
+  .ampm  { font-size: .4em; color: var(--text-dim); margin-left: .25em; }
+  .rho   { font-size: clamp(15px, 4vw, 19px); color: var(--sun); margin-top: 2px; }
+  .rho .sym { color: var(--text-dim); font-style: italic; margin-right: .3em; }
+  .rho .deg { color: var(--text-dim); }
+
+  /* the celestial sentence */
+  .sentence {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    bottom: 118px; width: min(680px, 92vw); text-align: center;
+    font-size: clamp(13px, 2.3vw, 16px); line-height: 1.7; color: var(--text-dim);
+    text-shadow: 0 2px 14px rgba(0,0,0,.7);
+  }
+  .sentence .sun  { color: var(--sun);  font-style: italic; }
+  .sentence .moon { color: var(--moon); font-style: italic; }
+  .sentence .up   { color: var(--text); }
+
+  /* controls */
+  .controls {
+    position: absolute; left: 50%; transform: translateX(-50%);
+    bottom: calc(env(safe-area-inset-bottom, 0) + 26px);
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  .watch-label {
+    font-family: "SFMono-Regular",Menlo,monospace;
+    font-size: 10px; letter-spacing: .28em; text-transform: uppercase; color: var(--text-dim);
+  }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+  .btns button {
+    background: rgba(16,21,38,.5); color: var(--text-dim);
+    border: 1px solid var(--line); border-radius: 999px;
+    padding: 8px 15px; cursor: pointer;
+    font-family: "SFMono-Regular",Menlo,monospace; font-size: 12px; letter-spacing: .08em;
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    transition: all .25s ease;
+  }
+  .btns button.active {
+    color: var(--sun); border-color: rgba(255,206,138,.55);
+    box-shadow: 0 0 16px rgba(255,206,138,.18);
+  }
+  .caption {
+    font-family: "SFMono-Regular",Menlo,monospace;
+    font-size: 9.5px; letter-spacing: .12em; color: var(--text-dim); opacity: .5; text-align: center;
+  }
+  @media (prefers-reduced-motion: reduce) { #sky { /* drawn once */ } }
+</style>
+</head>
+<body>
+  <canvas id="sky"></canvas>
+
+  <div class="ui">
+    <div class="top">
+      <div class="wordmark">Celestium</div>
+      <div class="tagline">We do not watch the clock. We watch the sky.</div>
+    </div>
+
+    <div class="readout">
+      <div class="ltime mono"><span id="ltime">--:--:--</span><span class="ampm" id="ampm">--</span></div>
+      <div class="rho mono"><span class="sym">ρ</span><span id="rho">000</span><span class="deg">°</span></div>
+    </div>
+
+    <div class="sentence">
+      <span class="sun">Sun in <b id="sunC">—</b></span> ·
+      <span class="moon"><b id="moonW">—</b> Moon in <b id="moonC">—</b></span> ·
+      <span class="up"><b id="upC">—</b> overhead</span>
+    </div>
+
+    <div class="controls">
+      <div class="watch-label">Watch a rhythm pass</div>
+      <div class="btns">
+        <button data-mode="now">NOW</button>
+        <button data-mode="day" class="active">DAY</button>
+        <button data-mode="month">MONTH</button>
+        <button data-mode="year">YEAR</button>
+        <button data-mode="pause">❚❚</button>
+      </div>
+      <div class="caption">Geocentric living model · accelerated · positions approximate</div>
+    </div>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ── Ecliptic-longitude boundaries of the 13 IAU sun-path sectors ── */
+  const ECL = [
+    { c: "Aries", s: 29 }, { c: "Taurus", s: 54 }, { c: "Gemini", s: 90 },
+    { c: "Cancer", s: 118 }, { c: "Leo", s: 138 }, { c: "Virgo", s: 174 },
+    { c: "Libra", s: 218 }, { c: "Scorpius", s: 241 }, { c: "Ophiuchus", s: 248 },
+    { c: "Sagittarius", s: 266 }, { c: "Capricornus", s: 299 }, { c: "Aquarius", s: 327 },
+    { c: "Pisces", s: 351 }
+  ];
+  function constellationAt(lon) {
+    lon = ((lon % 360) + 360) % 360;
+    if (lon >= 351 || lon < 29) return "Pisces";
+    let best = "Pisces";
+    for (const e of ECL) { if (e.s <= lon) best = e.c; }
+    return best;
+  }
+
+  /* ── Astronomy (approximate) ──────────────────────────────────────
+     Everything is driven by one "model time" that can run fast. */
+  const SYNODIC = 29.530588853;
+  const KNOWN_NEW_MOON = Date.UTC(2000, 0, 6, 18, 14) / 86400000; // in days
+
+  function sunLongitude(date) {
+    // days since this year's ~vernal equinox → degrees along the ecliptic
+    const days = date.getTime() / 86400000;
+    const eq = Date.UTC(date.getUTCFullYear(), 2, 20) / 86400000;
+    let lon = ((days - eq) * (360 / 365.2422)) % 360;
+    return (lon + 360) % 360;
+  }
+  function moonState(date) {
+    const days = date.getTime() / 86400000;
+    const age = (((days - KNOWN_NEW_MOON) % SYNODIC) + SYNODIC) % SYNODIC;
+    const frac = age / SYNODIC;                 // 0 new · .5 full
+    const elong = frac * 360;                   // angle ahead of the Sun
+    const lon = (sunLongitude(date) + elong) % 360;
+    const illum = (1 - Math.cos(elong * Math.PI / 180)) / 2;
+    const waxing = elong < 180;
+    let word = "new";
+    if (frac < 0.03 || frac > 0.97) word = "new";
+    else if (frac < 0.22) word = "waxing crescent";
+    else if (frac < 0.28) word = "first-quarter";
+    else if (frac < 0.47) word = "waxing gibbous";
+    else if (frac < 0.53) word = "full";
+    else if (frac < 0.72) word = "waning gibbous";
+    else if (frac < 0.78) word = "last-quarter";
+    else word = "waning crescent";
+    return { lon: lon, illum: illum, waxing: waxing, word: word };
+  }
+
+  /* ── Canvas setup ─────────────────────────────────────────────────── */
+  const cv = document.getElementById("sky");
+  const cx = cv.getContext("2d");
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let W = 0, H = 0, CXp = 0, CYp = 0, Rsky = 0, dpr = 1;
+  let stars = [], haze = [];
+
+  function rand(a, b) { return a + Math.random() * (b - a); }
+
+  function build() {
+    dpr = Math.min(window.devicePixelRatio || 1, 2);
+    W = window.innerWidth; H = window.innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    cv.style.width = W + "px"; cv.style.height = H + "px";
+    cx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    CXp = W / 2; CYp = H / 2;
+    Rsky = Math.hypot(W, H) / 2;       // cover the corners
+
+    // Stars live on the rotating celestial sphere: each has a longitude
+    // (angle) + a radius from Earth. The whole field turns once per day.
+    const count = Math.round((W * H) / 4200);
+    stars = [];
+    for (let i = 0; i < count; i++) {
+      stars.push({
+        lon: rand(0, 360),
+        rad: Math.sqrt(Math.random()) * Rsky,   // even fill of the disk
+        r: rand(0.4, 1.7),
+        base: rand(0.2, 0.95),
+        amp: rand(0.05, 0.4),
+        sp: rand(0.4, 1.7),
+        ph: rand(0, Math.PI * 2),
+        warm: Math.random() < 0.10
+      });
+    }
+    // A faint Milky-Way band: a cluster of dim stars along one great circle
+    haze = [];
+    for (let i = 0; i < count * 0.7; i++) {
+      const along = rand(0, 360);
+      const spread = (Math.random() - 0.5) * 90; // band thickness
+      haze.push({
+        lon: along,
+        rad: (0.5 + Math.random() * 0.5) * Rsky,
+        off: spread,
+        r: rand(0.3, 1.0),
+        base: rand(0.04, 0.16),
+        sp: rand(0.3, 1.0),
+        ph: rand(0, Math.PI * 2)
+      });
+    }
+  }
+
+  // polar → screen; angle 0 = up (12 o'clock), increasing clockwise
+  function P(R, deg) {
+    const a = deg * Math.PI / 180;
+    return { x: CXp + R * Math.sin(a), y: CYp - R * Math.cos(a) };
+  }
+
+  /* draw a small body with a day/night or phase terminator, lit side
+     pointed toward the Sun's screen position */
+  function drawLit(mx, my, r, illum, waxing, sunx, suny, litColor, darkColor) {
+    const ang = Math.atan2(suny - my, sunx - mx);
+    cx.save();
+    cx.translate(mx, my);
+    cx.rotate(ang);                  // +x now points at the Sun
+    // base (dark)
+    cx.beginPath(); cx.arc(0, 0, r, 0, Math.PI * 2);
+    cx.fillStyle = darkColor; cx.fill();
+    // lit lune: clip to the moon, fill silver, carve with an offset dark disc
+    cx.save();
+    cx.beginPath(); cx.arc(0, 0, r, 0, Math.PI * 2); cx.clip();
+    cx.beginPath(); cx.arc(0, 0, r, 0, Math.PI * 2);
+    cx.fillStyle = litColor; cx.fill();
+    // offset of the carving disc: 0 → fully dark (new); ±2r → fully lit (full)
+    const dx = (waxing ? 1 : -1) * (illum * 2 * r);
+    cx.beginPath(); cx.arc(-dx, 0, r, 0, Math.PI * 2);
+    cx.fillStyle = darkColor; cx.fill();
+    cx.restore();
+    // rim
+    cx.beginPath(); cx.arc(0, 0, r, 0, Math.PI * 2);
+    cx.strokeStyle = "rgba(255,255,255,0.18)"; cx.lineWidth = 0.6; cx.stroke();
+    cx.restore();
+  }
+
+  function label(x, y, text, color, size, weight) {
+    cx.font = (weight || "") + " " + (size || 10) + "px SFMono-Regular, Menlo, monospace";
+    cx.fillStyle = color; cx.textAlign = "center"; cx.textBaseline = "middle";
+    cx.fillText(text, x, y);
+  }
+
+  /* ── Model time + speed ───────────────────────────────────────────── */
+  let mode = "day";
+  let modelMs = Date.now();
+  let lastTs = performance.now();
+  const SPEED = {            // how fast model time advances vs real time
+    now: 1,
+    day: 86400 / 22,         // a full day in ~22s
+    month: (SYNODIC * 86400) / 26,   // a lunar month in ~26s
+    year: (365.25 * 86400) / 34,     // a year in ~34s
+    pause: 0
+  };
+
+  const btns = document.querySelectorAll(".btns button");
+  btns.forEach(function (b) {
+    b.addEventListener("click", function () {
+      mode = b.getAttribute("data-mode");
+      btns.forEach(function (x) { x.classList.remove("active"); });
+      b.classList.add("active");
+      if (mode === "now") modelMs = Date.now();
+    });
+  });
+
+  // text overlay refs
+  const elT = document.getElementById("ltime"), elA = document.getElementById("ampm");
+  const elR = document.getElementById("rho");
+  const elSunC = document.getElementById("sunC"), elMoonC = document.getElementById("moonC");
+  const elMoonW = document.getElementById("moonW"), elUpC = document.getElementById("upC");
+  function pad(n) { return String(n).padStart(2, "0"); }
+  let txtAccum = 0;
+
+  /* ── Frame ─────────────────────────────────────────────────────────── */
+  function frame(ts) {
+    const dt = Math.min(0.05, (ts - lastTs) / 1000); // seconds, clamped
+    lastTs = ts;
+    if (mode === "now") modelMs = Date.now();
+    else modelMs += dt * 1000 * SPEED[mode];
+
+    const date = new Date(modelMs);
+    const secsOfDay = date.getHours() * 3600 + date.getMinutes() * 60 +
+                      date.getSeconds() + date.getMilliseconds() / 1000;
+    const dayFrac = secsOfDay / 86400;
+    const rho = dayFrac * 360;
+    // diurnal rotation of the whole sky (once per day). Offset so that the
+    // anti-solar sky is high at local midnight.
+    const diurnal = dayFrac * 360;
+
+    const sunLon = sunLongitude(date);
+    const moon = moonState(date);
+
+    const tt = reduce ? 0 : ts * 0.001;
+
+    // ---- background ----
+    const g = cx.createRadialGradient(CXp, CYp, 0, CXp, CYp, Rsky);
+    g.addColorStop(0, "#0c1124");
+    g.addColorStop(0.55, "#080c1b");
+    g.addColorStop(1, "#04060e");
+    cx.fillStyle = g; cx.fillRect(0, 0, W, H);
+
+    // ---- Milky Way haze (rotates with the sky) ----
+    for (const s of haze) {
+      const p = P(s.rad, s.lon + diurnal);
+      const px = p.x + Math.sin((s.lon) * Math.PI / 180) * s.off;
+      const py = p.y - Math.cos((s.lon) * Math.PI / 180) * s.off;
+      const o = reduce ? s.base : s.base * (0.7 + 0.3 * Math.sin(tt * s.sp + s.ph));
+      cx.beginPath(); cx.arc(px, py, s.r, 0, Math.PI * 2);
+      cx.fillStyle = "rgba(170,185,235," + o + ")"; cx.fill();
+    }
+
+    // ---- Stars (twinkle + wheel once per day) ----
+    for (const s of stars) {
+      const p = P(s.rad, s.lon + diurnal);
+      const o = reduce ? s.base : Math.max(0, s.base + s.amp * Math.sin(tt * s.sp + s.ph));
+      cx.beginPath(); cx.arc(p.x, p.y, s.r, 0, Math.PI * 2);
+      cx.fillStyle = s.warm ? "rgba(255,224,198," + o + ")" : "rgba(234,240,255," + o + ")";
+      cx.fill();
+      if (s.r > 1.25) {
+        cx.beginPath(); cx.arc(p.x, p.y, s.r * 2.6, 0, Math.PI * 2);
+        cx.fillStyle = "rgba(234,240,255," + (o * 0.10) + ")"; cx.fill();
+      }
+    }
+
+    // ---- Zodiac ring (ecliptic) ----
+    const Rz = Math.min(W, H) * 0.40;
+    cx.beginPath(); cx.arc(CXp, CYp, Rz, 0, Math.PI * 2);
+    cx.strokeStyle = "rgba(190,205,255,0.10)"; cx.lineWidth = 1; cx.stroke();
+
+    const sunC = constellationAt(sunLon);
+    const upLon = (360 - diurnal) % 360;      // longitude currently at the top
+    const upC = constellationAt(upLon);
+
+    // sector separators + labels
+    const seps = ECL.map(function (e) { return e.s; }).concat([29]); // boundaries
+    for (let i = 0; i < ECL.length; i++) {
+      const start = (i === 0) ? 351 : ECL[i - 1].s;
+      const end = ECL[i].s;
+      let a = start, b = end; if (b < a) b += 360;
+      const mid = (a + b) / 2;
+      // separator tick
+      const sp1 = P(Rz - 7, ECL[i].s + diurnal), sp2 = P(Rz + 7, ECL[i].s + diurnal);
+      cx.beginPath(); cx.moveTo(sp1.x, sp1.y); cx.lineTo(sp2.x, sp2.y);
+      cx.strokeStyle = "rgba(190,205,255,0.10)"; cx.lineWidth = 1; cx.stroke();
+      // label
+      const lp = P(Rz + 22, mid + diurnal);
+      const name = ECL[i].c;
+      const isSun = (name === sunC), isUp = (name === upC);
+      const col = isSun ? "rgba(255,206,138,0.95)"
+                : isUp ? "rgba(223,230,245,0.85)"
+                : "rgba(150,160,189,0.40)";
+      label(lp.x, lp.y, name.toUpperCase(), col, isSun || isUp ? 11 : 9.5, isSun ? "700" : "400");
+    }
+
+    // ---- Sun on the ecliptic ----
+    const sp = P(Rz, sunLon + diurnal);
+    const sunGlow = cx.createRadialGradient(sp.x, sp.y, 0, sp.x, sp.y, 46);
+    sunGlow.addColorStop(0, "rgba(255,206,138,0.9)");
+    sunGlow.addColorStop(0.4, "rgba(255,170,90,0.28)");
+    sunGlow.addColorStop(1, "rgba(255,170,90,0)");
+    cx.beginPath(); cx.arc(sp.x, sp.y, 46, 0, Math.PI * 2);
+    cx.fillStyle = sunGlow; cx.fill();
+    cx.beginPath(); cx.arc(sp.x, sp.y, 11, 0, Math.PI * 2);
+    cx.fillStyle = "#ffce8a"; cx.fill();
+
+    // faint Earth–Sun line
+    cx.beginPath(); cx.moveTo(CXp, CYp); cx.lineTo(sp.x, sp.y);
+    cx.strokeStyle = "rgba(255,206,138,0.12)"; cx.lineWidth = 1; cx.stroke();
+
+    // ---- Moon on its orbit ----
+    const Rm = Rz * 0.52;
+    const mp = P(Rm, moon.lon + diurnal);
+    // orbit hint
+    cx.beginPath(); cx.arc(CXp, CYp, Rm, 0, Math.PI * 2);
+    cx.strokeStyle = "rgba(190,205,255,0.06)"; cx.lineWidth = 1; cx.stroke();
+    drawLit(mp.x, mp.y, 12, moon.illum, moon.waxing, sp.x, sp.y, "#e8ecf5", "#20232f");
+
+    // ---- Earth at center (day/night terminator faces the Sun) ----
+    drawLit(CXp, CYp, 16, 0.5, true, sp.x, sp.y, "#5b7fd6", "#1a2440");
+    // a "you" dot fixed on Earth's surface, carried around once per day
+    const youAng = dayFrac * 360;            // your local meridian
+    const yp = P(16, youAng);                // on Earth's rim
+    cx.beginPath(); cx.arc(yp.x, yp.y, 2.4, 0, Math.PI * 2);
+    cx.fillStyle = "#fff"; cx.fill();
+
+    // ---- text overlay (throttled) ----
+    txtAccum += dt;
+    if (txtAccum > 0.12) {
+      txtAccum = 0;
+      let h = date.getHours(); const ap = h >= 12 ? "PM" : "AM";
+      let h12 = h % 12; if (h12 === 0) h12 = 12;
+      elT.textContent = h12 + ":" + pad(date.getMinutes()) + ":" + pad(date.getSeconds());
+      elA.textContent = ap;
+      elR.textContent = String(Math.floor(rho)).padStart(3, "0");
+      elSunC.textContent = sunC;
+      elMoonC.textContent = moon.lon != null ? constellationAt(moon.lon) : "—";
+      elMoonW.textContent = moon.word;
+      elUpC.textContent = upC;
+    }
+
+    requestAnimationFrame(frame);
+  }
+
+  build();
+  window.addEventListener("resize", build);
+  requestAnimationFrame(function (ts) { lastTs = ts; frame(ts); });
+})();
+</script>
+</body>
+</html>
